@@ -447,6 +447,123 @@ function FormBeneficiario({ initial, onSave, onCancel, polygonFeature, listaFreg
         <button style={S.btn("ghost")} onClick={onCancel}>Cancelar</button>
         <button style={S.btn("primary")} onClick={() => { if (!f.cpe || !f.nome) return alert("CPE e Nome são obrigatórios."); if (!f.membros.length) return alert("É necessário pelo menos um membro do agregado."); onSave(f); }}>Guardar</button>
       </div>
+
+      {/* Gráfico de Cobertura */}
+      <div style={S.card}>
+        <div style={S.cardTitle}>🎯 Cobertura da Comunidade</div>
+        {(() => {
+          const totalBeneficiariosFreguesia = limFrg ? beneficiarios.filter(b => b.freguesia === limFrg) : beneficiarios;
+          const totalProdutoresFreguesia = limFrg ? produtores.filter(p => p.freguesia === limFrg) : produtores;
+
+          // Beneficiários servidos no último relatório
+          const ultimoRel = relatorios.sort((a, b) => b.data > a.data ? 1 : -1)[0];
+          const benServidos = ultimoRel ? new Set(ultimoRel.linhas.map(l => l.benId)).size : 0;
+          const benNaoServidos = totalBeneficiariosFreguesia.length - benServidos;
+
+          // kW totais disponíveis vs distribuídos no último mês
+          const kwInstalado = totalProdutoresFreguesia.reduce((s, p) => s + (parseFloat(p.potencia) || 0), 0);
+          const kwDistribuidoUltimo = ultimoRel ? ultimoRel.linhas.reduce((s, l) => s + l.kw, 0) : 0;
+          const kwNaoAlocadoUltimo = ultimoRel ? Object.values(ultimoRel.naoAlocado || {}).reduce((s, v) => s + v, 0) : 0;
+
+          // Direito total dos beneficiários
+          const direitoTotal = totalBeneficiariosFreguesia.reduce((s, b) => s + (b.membros?.length || 1) * (parseFloat(config.kwPorMembro) || 50), 0);
+          const pctBenServidos = totalBeneficiariosFreguesia.length > 0 ? (benServidos / totalBeneficiariosFreguesia.length * 100).toFixed(0) : 0;
+          const pctDireitoSatisfeito = direitoTotal > 0 ? Math.min((kwDistribuidoUltimo / direitoTotal * 100), 100).toFixed(0) : 0;
+
+          return (
+            <div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+
+                {/* Cobertura de famílias */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#3d5a4e", marginBottom: 16 }}>Famílias Beneficiadas</div>
+                  <div style={{ position: "relative", width: 160, height: 160, margin: "0 auto 16px" }}>
+                    <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e8f5ef" strokeWidth="3.5" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#2d6a4f" strokeWidth="3.5"
+                        strokeDasharray={`${pctBenServidos} ${100 - pctBenServidos}`}
+                        strokeLinecap="round" />
+                    </svg>
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ fontSize: 28, fontWeight: 700, color: "#2d6a4f" }}>{pctBenServidos}%</div>
+                      <div style={{ fontSize: 10, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1 }}>cobertura</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#2d6a4f" }} />
+                        <span style={{ fontSize: 12, color: "#3d5a4e" }}>Servidas</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f" }}>{benServidos}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#e8f5ef", border: "1px solid #c8e6d8" }} />
+                        <span style={{ fontSize: 12, color: "#3d5a4e" }}>Por servir</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#7a9e8e" }}>{benNaoServidos}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: 2, background: "#d8ede6" }} />
+                        <span style={{ fontSize: 12, color: "#3d5a4e" }}>Total registados</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#3d5a4e" }}>{totalBeneficiariosFreguesia.length}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cobertura de kW */}
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#3d5a4e", marginBottom: 16 }}>Direito Energético Satisfeito</div>
+                  <div style={{ position: "relative", width: 160, height: 160, margin: "0 auto 16px" }}>
+                    <svg viewBox="0 0 36 36" style={{ width: "100%", height: "100%", transform: "rotate(-90deg)" }}>
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#e8f5ef" strokeWidth="3.5" />
+                      <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f5a623" strokeWidth="3.5"
+                        strokeDasharray={`${pctDireitoSatisfeito} ${100 - pctDireitoSatisfeito}`}
+                        strokeLinecap="round" />
+                    </svg>
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                      <div style={{ fontSize: 28, fontWeight: 700, color: "#f5a623" }}>{pctDireitoSatisfeito}%</div>
+                      <div style={{ fontSize: 10, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1 }}>satisfeito</div>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#f5a623" }} />
+                        <span style={{ fontSize: 12, color: "#3d5a4e" }}>kW distribuídos</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#f5a623" }}>{kwDistribuidoUltimo.toFixed(0)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#fde8e8", border: "1px solid #f0b0b0" }} />
+                        <span style={{ fontSize: 12, color: "#3d5a4e" }}>kW não alocados</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#e05c5c" }}>{kwNaoAlocadoUltimo.toFixed(0)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: 2, background: "#d8ede6" }} />
+                        <span style={{ fontSize: 12, color: "#3d5a4e" }}>Direito total</span>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: "#3d5a4e" }}>{direitoTotal.toFixed(0)} kW</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {!ultimoRel && (
+                <div style={{ ...S.alert("info"), marginTop: 16 }}>
+                  Executa a primeira redistribuição para ver os dados de cobertura.
+                </div>
+              )}
+            </div>
+          );
+        })()}
+      </div>
     </div>
   );
 }
