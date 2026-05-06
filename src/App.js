@@ -87,7 +87,7 @@ const S = {
 };
 
 // ─── Mapa Leaflet ─────────────────────────────────────────────────────────────
-function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
+function LeafletMap({ pontos, mostrarRaios, config, polygonFeature, linhasRedistribuicao }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layersRef = useRef([]);
@@ -148,6 +148,49 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
       }
     });
 
+    // Desenhar linhas de redistribuição
+    if (linhasRedistribuicao && linhasRedistribuicao.length > 0) {
+      const pontosPorId = {};
+      pontos.forEach(p => {
+        const lat = parseFloat(String(p.lat).replace(",", ".").trim());
+        const lon = parseFloat(String(p.lon).replace(",", ".").trim());
+        if (!isNaN(lat) && !isNaN(lon)) pontosPorId[p.id] = [lat, lon];
+      });
+
+      // Agrupar por par produtor-beneficiário para evitar linhas duplicadas
+      const pares = {};
+      linhasRedistribuicao.forEach(l => {
+        const key = `${l.prodId}-${l.benId}`;
+        if (!pares[key]) pares[key] = { ...l, kwTotal: 0 };
+        pares[key].kwTotal += l.kw;
+      });
+
+      Object.values(pares).forEach(l => {
+        const latP = pontosPorId[l.prodId];
+        const latB = pontosPorId[l.benId];
+        if (!latP || !latB) return;
+
+        const linha = L.polyline([latP, latB], {
+          color: "#2d6a4f",
+          weight: Math.min(Math.max(l.kwTotal / 20, 1.5), 5),
+          opacity: 0.7,
+          dashArray: "8,4",
+        }).addTo(map);
+        linha.bindPopup(`<b>${l.prodNome || l.prodCPE}</b> → <b>${l.benNome || l.benCPE}</b><br><small>${l.kwTotal.toFixed(1)} kW transferidos</small>`);
+        layersRef.current.push(linha);
+
+        // Seta no meio da linha
+        const midLat = (latP[0] + latB[0]) / 2;
+        const midLon = (latP[1] + latB[1]) / 2;
+        const arrowIcon = L.divIcon({
+          html: `<div style="background:#2d6a4f;color:white;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.3)">${l.kwTotal.toFixed(0)}</div>`,
+          className: "", iconSize: [22, 22], iconAnchor: [11, 11]
+        });
+        const midMarker = L.marker([midLat, midLon], { icon: arrowIcon }).addTo(map);
+        layersRef.current.push(midMarker);
+      });
+    }
+
     if (bounds.length > 0) {
       try {
         const lBounds = window.L.latLngBounds(bounds.map(b => window.L.latLng(b[0], b[1])));
@@ -206,7 +249,7 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
     if (!mapInstanceRef.current) return;
     const timer = setTimeout(() => renderMap(), 300);
     return () => clearTimeout(timer);
-  }, [pontos, mostrarRaios, config, polygonFeature]);
+  }, [pontos, mostrarRaios, config, polygonFeature, linhasRedistribuicao]);
 
   return (
     <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #d8ede6" }}>
@@ -876,14 +919,14 @@ function TabRedistribuicao({ produtores, beneficiarios, config, polygonFeature }
           <div style={{ marginTop: 20 }}>
             {pontosMapa.length === 0
               ? <div style={S.empty}>Nenhum ponto com coordenadas definidas</div>
-              : <LeafletMap pontos={pontosMapa} mostrarRaios={true} config={config} polygonFeature={polygonFeature} />
+              : <LeafletMap pontos={pontosMapa} mostrarRaios={true} config={config} polygonFeature={polygonFeature} linhasRedistribuicao={resultado ? resultado.linhas : []} />
             }
             <div style={{ display: "flex", gap: 20, marginTop: 10, fontSize: 12, color: "#7a9e8e", fontStyle: "italic", flexWrap: "wrap" }}>
               <span>☀ Produtores ({produtores.filter(p => p.lat && p.lon).length})</span>
               <span>🏠 Beneficiários ({beneficiarios.filter(b => b.lat && b.lon).length})</span>
               <span>Círculos = raio de redistribuição</span>
+              {resultado && <span>― Linhas = fluxo de energia (kW)</span>}
               {polygonFeature && <span>Contorno verde = limite da freguesia</span>}
-              {polygonFeature && <span>Pins cinzentos = fora do limite</span>}
             </div>
           </div>
         )}
