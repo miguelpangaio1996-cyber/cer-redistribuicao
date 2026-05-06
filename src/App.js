@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc } from "firebase/firestore";
+import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
 
 // ─── Firebase Config ──────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -15,6 +16,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
@@ -1963,7 +1966,75 @@ function TabSimulador({ produtores, beneficiarios, config, polygonFeature }) {
 const TABS = ["Dashboard", "Produtores", "Beneficiários", "Configurações", "Redistribuição", "Simulador", "Relatórios", "Sobre"];
 const DEFAULT_CONFIG = { kwPorMembro: 50, raioPadrao: 3, raiosProdutores: {}, metodoRedistribuicao: "proporcional" };
 
+// ─── Ecrã de Login ───────────────────────────────────────────────────────────
+function LoginScreen({ onLogin, erro, loading }) {
+  return (
+    <div style={{ ...S.app, alignItems: "center", justifyContent: "center", gap: 24 }}>
+      <div style={{ background: "#ffffff", borderRadius: 20, padding: "48px 40px", textAlign: "center", boxShadow: "0 8px 32px rgba(45,106,79,0.12)", border: "1px solid #d8ede6", maxWidth: 420, width: "90%" }}>
+        <div style={{ width: 72, height: 72, background: "linear-gradient(135deg, #2d6a4f 0%, #40916c 100%)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, margin: "0 auto 20px" }}>☀</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: "#2d6a4f", marginBottom: 6 }}>Banco de Energia Solidário</div>
+        <div style={{ fontSize: 13, color: "#7a9e8e", fontStyle: "italic", marginBottom: 32 }}>Comunidade de Energia Renovável</div>
+
+        {erro && (
+          <div style={{ ...S.alert("err"), marginBottom: 20, textAlign: "left" }}>{erro}</div>
+        )}
+
+        <button
+          onClick={onLogin}
+          disabled={loading}
+          style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
+            width: "100%", padding: "14px 24px", borderRadius: 10, border: "1px solid #d8ede6",
+            background: "#ffffff", cursor: loading ? "wait" : "pointer", fontSize: 14, fontWeight: 600,
+            color: "#3d5a4e", fontFamily: "inherit", transition: "all 0.2s",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+            opacity: loading ? 0.6 : 1,
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          </svg>
+          {loading ? "A autenticar..." : "Entrar com Google"}
+        </button>
+
+        <div style={{ fontSize: 11, color: "#b7ddd0", marginTop: 20, lineHeight: 1.5 }}>
+          Acesso restrito a utilizadores autorizados.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Ecrã de Acesso Negado ───────────────────────────────────────────────────
+function AcessoNegado({ user, onLogout }) {
+  return (
+    <div style={{ ...S.app, alignItems: "center", justifyContent: "center", gap: 24 }}>
+      <div style={{ background: "#ffffff", borderRadius: 20, padding: "48px 40px", textAlign: "center", boxShadow: "0 8px 32px rgba(45,106,79,0.12)", border: "1px solid #d8ede6", maxWidth: 420, width: "90%" }}>
+        <div style={{ width: 72, height: 72, background: "#fde8e8", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, margin: "0 auto 20px" }}>🔒</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#c0392b", marginBottom: 8 }}>Acesso Não Autorizado</div>
+        <div style={{ fontSize: 13, color: "#7a9e8e", marginBottom: 8 }}>
+          A conta <b style={{ color: "#3d5a4e" }}>{user.email}</b> não está na lista de utilizadores autorizados.
+        </div>
+        <div style={{ fontSize: 12, color: "#b7ddd0", marginBottom: 28, lineHeight: 1.5 }}>
+          Se precisas de acesso, contacta o administrador da plataforma.
+        </div>
+        <button onClick={onLogout} style={S.btn("primary")}>Voltar ao Login</button>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
+  // ── Auth state ──
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authErro, setAuthErro] = useState("");
+  const [autorizado, setAutorizado] = useState(null); // null = a verificar, true/false
+
+  // ── App state ──
   const [tab, setTab] = useState(0);
   const [produtores, setProdutores] = useState([]);
   const [beneficiarios, setBeneficiarios] = useState([]);
@@ -1973,7 +2044,67 @@ export default function App() {
   const [polygonFeature, setPolygonFeature] = useState(null);
   const [listaFreguesias, setListaFreguesias] = useState([]);
 
+  // ── Observar auth state ──
   useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u);
+      setAuthLoading(false);
+      if (!u) { setAutorizado(null); setAuthErro(""); }
+    });
+    return unsub;
+  }, []);
+
+  // ── Verificar se email está autorizado ──
+  useEffect(() => {
+    if (!user) return;
+    setAutorizado(null);
+    getDoc(doc(db, "config", "autorizados")).then(d => {
+      if (d.exists()) {
+        const emails = d.data().emails || [];
+        setAutorizado(emails.includes(user.email.toLowerCase()));
+      } else {
+        // Se o documento não existir, cria-o com o primeiro email
+        const emailsIniciais = ["miguelpangaio1996@gmail.com"];
+        setDoc(doc(db, "config", "autorizados"), { emails: emailsIniciais }).then(() => {
+          setAutorizado(emailsIniciais.includes(user.email.toLowerCase()));
+        });
+      }
+    }).catch(e => {
+      console.error("Erro ao verificar autorização:", e);
+      setAutorizado(false);
+    });
+  }, [user]);
+
+  // ── Login com Google ──
+  const handleLogin = async () => {
+    setAuthErro("");
+    setAuthLoading(true);
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (e) {
+      console.error("Erro no login:", e);
+      if (e.code === "auth/popup-closed-by-user") {
+        setAuthErro("Login cancelado.");
+      } else if (e.code === "auth/popup-blocked") {
+        setAuthErro("O popup foi bloqueado pelo navegador. Permite popups para este site.");
+      } else {
+        setAuthErro("Erro ao autenticar. Tenta novamente.");
+      }
+    }
+    setAuthLoading(false);
+  };
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    setUser(null);
+    setAutorizado(null);
+    setAuthErro("");
+  };
+
+  // ── Carregar dados do Firebase (só quando autorizado) ──
+  useEffect(() => {
+    if (!autorizado) return;
+
     const unsubs = [
       onSnapshot(collection(db, "produtores"), snap => setProdutores(snap.docs.map(d => d.data()))),
       onSnapshot(collection(db, "beneficiarios"), snap => setBeneficiarios(snap.docs.map(d => d.data()))),
@@ -2000,8 +2131,31 @@ export default function App() {
       setLoaded(true);
     });
     return () => unsubs.forEach(u => u());
-  }, []);
+  }, [autorizado]);
 
+  // ── Loading auth ──
+  if (authLoading) return (
+    <div style={{ ...S.app, alignItems: "center", justifyContent: "center", gap: 16 }}>
+      <div style={{ fontSize: 40 }}>☀</div>
+      <div style={{ color: "#7a9e8e", fontSize: 14, fontStyle: "italic" }}>A verificar autenticação...</div>
+    </div>
+  );
+
+  // ── Sem login ──
+  if (!user) return <LoginScreen onLogin={handleLogin} erro={authErro} loading={authLoading} />;
+
+  // ── A verificar autorização ──
+  if (autorizado === null) return (
+    <div style={{ ...S.app, alignItems: "center", justifyContent: "center", gap: 16 }}>
+      <div style={{ fontSize: 40 }}>🔑</div>
+      <div style={{ color: "#7a9e8e", fontSize: 14, fontStyle: "italic" }}>A verificar permissões...</div>
+    </div>
+  );
+
+  // ── Não autorizado ──
+  if (!autorizado) return <AcessoNegado user={user} onLogout={handleLogout} />;
+
+  // ── A carregar dados ──
   if (!loaded) return (
     <div style={{ ...S.app, alignItems: "center", justifyContent: "center", gap: 16 }}>
       <div style={{ fontSize: 40 }}>☀</div>
@@ -2020,7 +2174,16 @@ export default function App() {
             {config.limiteFreguesia && ` · ${config.limiteFreguesia}`}
           </div>
         </div>
-        <div style={{ marginLeft: "auto", fontSize: 11, color: "rgba(255,255,255,0.8)" }}>● ligado</div>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.95)", fontWeight: 600 }}>{user.displayName}</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>{user.email}</div>
+          </div>
+          {user.photoURL && <img src={user.photoURL} alt="" style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)" }} />}
+          <button onClick={handleLogout} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }} title="Terminar sessão">
+            Sair
+          </button>
+        </div>
       </div>
       <div style={S.nav}>
         {TABS.map((t, i) => <button key={t} style={S.navBtn(tab === i)} onClick={() => setTab(i)}>{t}</button>)}
