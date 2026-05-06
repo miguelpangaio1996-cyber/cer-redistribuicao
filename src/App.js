@@ -1112,6 +1112,103 @@ function TabRedistribuicao({ produtores, beneficiarios, config, polygonFeature }
 }
 
 // ─── Aba Relatórios ───────────────────────────────────────────────────────────
+function gerarPDF(rel) {
+  const kwDistribuidos = rel.linhas.reduce((s, l) => s + l.kw, 0);
+  const kwNaoAlocados = Object.values(rel.naoAlocado || {}).reduce((s, v) => s + v, 0);
+  const familias = new Set(rel.linhas.map(l => l.benId)).size;
+  const data = new Date(rel.data).toLocaleDateString("pt-PT");
+
+  const html = `<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Relatório CER - ${rel.periodo}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Georgia, serif; color: #2d4a3e; padding: 40px; font-size: 13px; }
+  .header { background: linear-gradient(135deg, #2d6a4f, #40916c); color: white; padding: 28px 32px; border-radius: 10px; margin-bottom: 28px; }
+  .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .header p { font-size: 12px; opacity: 0.85; font-style: italic; }
+  .header .meta { margin-top: 12px; font-size: 11px; opacity: 0.75; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat { background: #f0faf5; border: 1px solid #c8e6d8; border-radius: 8px; padding: 14px; text-align: center; }
+  .stat .num { font-size: 26px; font-weight: 700; color: #2d6a4f; }
+  .stat .label { font-size: 10px; color: #7a9e8e; text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; }
+  .section-title { font-size: 13px; font-weight: 700; color: #2d6a4f; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid #d8ede6; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 12px; }
+  th { padding: 9px 12px; text-align: left; font-size: 10px; color: #7a9e8e; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #d8ede6; font-weight: 600; }
+  td { padding: 10px 12px; border-bottom: 1px solid #eaf5f0; color: #3d5a4e; }
+  tr:last-child td { border-bottom: none; }
+  .badge-prod { background: #fef3dc; color: #b07c10; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .badge-ben { background: #d8f3e8; color: #1e7a4a; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .alert-red { background: #fde8e8; border: 1px solid #f0b0b0; border-radius: 8px; padding: 12px 16px; margin-bottom: 24px; font-size: 12px; color: #c0392b; }
+  .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #d8ede6; font-size: 11px; color: #7a9e8e; display: flex; justify-content: space-between; }
+  .section { margin-bottom: 24px; }
+  @media print { body { padding: 20px; } }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>Banco de Energia Solidário</h1>
+    <p>Comunidade de Energia Renovável${rel.limiteFreguesia ? ` · ${rel.limiteFreguesia}` : ""}</p>
+    <div class="meta">Relatório de Redistribuição Energética · Período: ${rel.periodo} · Gerado em: ${data}</div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="num">${rel.linhas.length}</div><div class="label">Atribuições</div></div>
+    <div class="stat"><div class="num">${kwDistribuidos.toFixed(1)}</div><div class="label">kW Distribuídos</div></div>
+    <div class="stat"><div class="num">${kwNaoAlocados.toFixed(1)}</div><div class="label">kW Não Alocados</div></div>
+    <div class="stat"><div class="num">${familias}</div><div class="label">Famílias Servidas</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Detalhe das Atribuições</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Produtor CPE</th>
+          <th>Produtor Nome</th>
+          <th>Beneficiário CPE</th>
+          <th>Beneficiário Nome</th>
+          <th>kW Atribuídos</th>
+          <th>Distância (km)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rel.linhas.map(l => `<tr>
+          <td><span class="badge-prod">${l.prodCPE}</span></td>
+          <td>${l.prodNome || "—"}</td>
+          <td><span class="badge-ben">${l.benCPE}</span></td>
+          <td>${l.benNome}</td>
+          <td>${parseFloat(l.kw).toFixed(2)} kW</td>
+          <td>${l.distKm} km</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>
+  </div>
+
+  ${kwNaoAlocados > 0 ? `
+  <div class="section">
+    <div class="section-title">kW Não Alocados</div>
+    <div class="alert-red">
+      Os seguintes produtores tiveram excedente de energia não distribuída por ausência de beneficiários elegíveis dentro do raio de redistribuição:<br><br>
+      ${(rel.produtores || []).filter(p => rel.naoAlocado[p.id]).map(p => `<b>${p.cpe}</b> (${p.nome}): ${parseFloat(rel.naoAlocado[p.id]).toFixed(2)} kW`).join(" &nbsp;|&nbsp; ")}
+    </div>
+  </div>` : ""}
+
+  <div class="footer">
+    <span>Banco de Energia Solidário · Relatório gerado automaticamente</span>
+    <span>Período: ${rel.periodo} · ${data}</span>
+  </div>
+</body>
+</html>`;
+
+  const janela = window.open("", "_blank");
+  janela.document.write(html);
+  janela.document.close();
+  setTimeout(() => janela.print(), 500);
+}
+
 function TabRelatorios({ relatorios }) {
   const [selecionado, setSelecionado] = useState(null);
 
@@ -1140,7 +1237,8 @@ function TabRelatorios({ relatorios }) {
       {selecionado && (
         <Modal title={`Relatório — ${selecionado.periodo}`} onClose={() => setSelecionado(null)}>
           <div style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <button style={S.btn("green")} onClick={() => exportarExcel(selecionado)}>⬇ Exportar Excel (E-Redes)</button>
+            <button style={S.btn("green")} onClick={() => exportarExcel(selecionado)}>⬇ Exportar Excel</button>
+            <button style={S.btn("primary")} onClick={() => gerarPDF(selecionado)}>📄 Gerar PDF</button>
             {selecionado.limiteFreguesia && <span style={S.badge("green")}>Freguesia: {selecionado.limiteFreguesia}</span>}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 12, marginBottom: 20 }}>
@@ -1172,6 +1270,7 @@ function TabRelatorios({ relatorios }) {
                     <div style={{ display: "flex", gap: 8 }}>
                       <button style={S.btn("ghost")} onClick={() => setSelecionado(r)}>Ver</button>
                       <button style={S.btn("green")} onClick={() => exportarExcel(r)}>Excel</button>
+                      <button style={S.btn("primary")} onClick={() => gerarPDF(r)}>PDF</button>
                       <button style={S.btn("danger")} onClick={async () => { if (confirm("Eliminar relatório?")) await deleteDoc(doc(db, "relatorios", r.id)); }}>✕</button>
                     </div>
                   </td>
