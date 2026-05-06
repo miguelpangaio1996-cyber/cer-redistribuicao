@@ -1055,8 +1055,173 @@ function TabRelatorios({ relatorios }) {
   );
 }
 
+
+// ─── Aba Dashboard ────────────────────────────────────────────────────────────
+function TabDashboard({ produtores, beneficiarios, relatorios, config, polygonFeature }) {
+  const limFrg = polygonFeature?.properties?.freguesia;
+
+  // Estatísticas gerais
+  const totalProdutores = limFrg ? produtores.filter(p => p.freguesia === limFrg).length : produtores.length;
+  const totalBeneficiarios = limFrg ? beneficiarios.filter(b => b.freguesia === limFrg).length : beneficiarios.length;
+  const totalMembros = beneficiarios.reduce((s, b) => s + (b.membros?.length || 0), 0);
+  const totalPotencia = produtores.reduce((s, p) => s + (parseFloat(p.potencia) || 0), 0);
+
+  // Estatísticas dos relatórios
+  const totalKwDistribuidos = relatorios.reduce((s, r) => s + r.linhas.reduce((ss, l) => ss + l.kw, 0), 0);
+  const totalKwNaoAlocados = relatorios.reduce((s, r) => s + Object.values(r.naoAlocado || {}).reduce((ss, v) => ss + v, 0), 0);
+  const totalAtribuicoes = relatorios.reduce((s, r) => s + r.linhas.length, 0);
+  const ultimoRelatorio = relatorios.sort((a, b) => b.data > a.data ? 1 : -1)[0];
+
+  // Dados para gráfico mensal (últimos 6 meses)
+  const dadosMensais = [];
+  const hoje = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+    const periodo = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const rel = relatorios.filter(r => r.periodo === periodo);
+    const kw = rel.reduce((s, r) => s + r.linhas.reduce((ss, l) => ss + l.kw, 0), 0);
+    const nao = rel.reduce((s, r) => s + Object.values(r.naoAlocado || {}).reduce((ss, v) => ss + v, 0), 0);
+    dadosMensais.push({ periodo: periodo.slice(5) + "/" + periodo.slice(2, 4), kw: Math.round(kw), nao: Math.round(nao) });
+  }
+
+  const maxKw = Math.max(...dadosMensais.map(d => d.kw + d.nao), 1);
+
+  // Taxa de satisfação do último mês
+  const taxaSatisfacao = ultimoRelatorio ? (
+    (ultimoRelatorio.linhas.reduce((s, l) => s + l.kw, 0) /
+    (ultimoRelatorio.linhas.reduce((s, l) => s + l.kw, 0) + Object.values(ultimoRelatorio.naoAlocado || {}).reduce((s, v) => s + v, 0))) * 100
+  ).toFixed(0) : 0;
+
+  return (
+    <div>
+      {/* Cabeçalho */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>
+          Banco de Energia Solidário
+        </div>
+        <div style={{ fontSize: 13, color: "#7a9e8e", fontStyle: "italic" }}>
+          {limFrg ? `${limFrg} · ` : ""}Visão geral da comunidade de energia renovável
+        </div>
+      </div>
+
+      {/* Estatísticas principais */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 20 }}>
+        <div style={{ ...S.card, marginBottom: 0, borderLeft: "4px solid #f5a623", padding: 20 }}>
+          <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Produtores Ativos</div>
+          <div style={{ fontSize: 36, fontWeight: 700, color: "#f5a623" }}>{totalProdutores}</div>
+          <div style={{ fontSize: 11, color: "#7a9e8e", marginTop: 4 }}>{totalPotencia.toFixed(1)} kW instalados</div>
+        </div>
+        <div style={{ ...S.card, marginBottom: 0, borderLeft: "4px solid #2d6a4f", padding: 20 }}>
+          <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Beneficiários</div>
+          <div style={{ fontSize: 36, fontWeight: 700, color: "#2d6a4f" }}>{totalBeneficiarios}</div>
+          <div style={{ fontSize: 11, color: "#7a9e8e", marginTop: 4 }}>{totalMembros} membros de agregado</div>
+        </div>
+        <div style={{ ...S.card, marginBottom: 0, borderLeft: "4px solid #40916c", padding: 20 }}>
+          <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>kW Distribuídos</div>
+          <div style={{ fontSize: 36, fontWeight: 700, color: "#40916c" }}>{totalKwDistribuidos.toFixed(0)}</div>
+          <div style={{ fontSize: 11, color: "#7a9e8e", marginTop: 4 }}>{totalAtribuicoes} atribuições totais</div>
+        </div>
+        <div style={{ ...S.card, marginBottom: 0, borderLeft: "4px solid #4a90d9", padding: 20 }}>
+          <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Taxa de Satisfação</div>
+          <div style={{ fontSize: 36, fontWeight: 700, color: "#4a90d9" }}>{taxaSatisfacao}%</div>
+          <div style={{ fontSize: 11, color: "#7a9e8e", marginTop: 4 }}>último mês processado</div>
+        </div>
+      </div>
+
+      {/* Gráfico mensal */}
+      <div style={S.card}>
+        <div style={S.cardTitle}>📊 Evolução Mensal — kW Distribuídos</div>
+        {relatorios.length === 0 ? (
+          <div style={S.empty}>Sem dados de relatórios ainda</div>
+        ) : (
+          <div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 12, height: 180, padding: "0 8px", marginBottom: 8 }}>
+              {dadosMensais.map((d, i) => (
+                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <div style={{ fontSize: 10, color: "#2d6a4f", fontWeight: 700 }}>{d.kw > 0 ? d.kw : ""}</div>
+                  <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 }}>
+                    {d.nao > 0 && (
+                      <div style={{ width: "100%", height: Math.max((d.nao / maxKw) * 140, 2), background: "#fde8e8", borderRadius: "4px 4px 0 0", border: "1px solid #f0b0b0" }} title={`Não alocado: ${d.nao} kW`} />
+                    )}
+                    <div style={{ width: "100%", height: Math.max((d.kw / maxKw) * 140, d.kw > 0 ? 4 : 0), background: d.kw > 0 ? "linear-gradient(to top, #2d6a4f, #40916c)" : "#e8f5ef", borderRadius: d.nao > 0 ? "0" : "4px 4px 0 0", border: d.kw > 0 ? "none" : "1px dashed #d8ede6" }} title={`Distribuído: ${d.kw} kW`} />
+                  </div>
+                  <div style={{ fontSize: 10, color: "#7a9e8e" }}>{d.periodo}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 20, fontSize: 11, color: "#7a9e8e", paddingLeft: 8 }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 12, height: 12, background: "linear-gradient(to top, #2d6a4f, #40916c)", borderRadius: 2, display: "inline-block" }} /> kW Distribuídos</span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}><span style={{ width: 12, height: 12, background: "#fde8e8", border: "1px solid #f0b0b0", borderRadius: 2, display: "inline-block" }} /> kW Não Alocados</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Último relatório + Beneficiários com mais kW */}
+      <div style={S.grid2}>
+        <div style={S.card}>
+          <div style={S.cardTitle}>📋 Último Relatório</div>
+          {!ultimoRelatorio ? (
+            <div style={S.empty}>Sem relatórios</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#7a9e8e" }}>Período</span>
+                <span style={S.badge("blue")}>{ultimoRelatorio.periodo}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#7a9e8e" }}>kW distribuídos</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#2d6a4f" }}>{ultimoRelatorio.linhas.reduce((s, l) => s + l.kw, 0).toFixed(1)} kW</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#7a9e8e" }}>kW não alocados</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#e05c5c" }}>{Object.values(ultimoRelatorio.naoAlocado || {}).reduce((s, v) => s + v, 0).toFixed(1)} kW</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#7a9e8e" }}>Famílias servidas</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "#2d6a4f" }}>{new Set(ultimoRelatorio.linhas.map(l => l.benId)).size}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 12, color: "#7a9e8e" }}>Data</span>
+                <span style={{ fontSize: 11, color: "#7a9e8e" }}>{new Date(ultimoRelatorio.data).toLocaleDateString("pt-PT")}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div style={S.card}>
+          <div style={S.cardTitle}>⚡ Direito por Agregado</div>
+          {beneficiarios.length === 0 ? (
+            <div style={S.empty}>Sem beneficiários</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {beneficiarios.slice(0, 5).map(b => {
+                const kwDireito = (b.membros?.length || 1) * (parseFloat(config.kwPorMembro) || 50);
+                const kwRecebido = ultimoRelatorio ? (ultimoRelatorio.linhas.filter(l => l.benId === b.id).reduce((s, l) => s + l.kw, 0)) : 0;
+                const pct = Math.min((kwRecebido / kwDireito) * 100, 100);
+                return (
+                  <div key={b.id}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, color: "#3d5a4e" }}>{b.nome}</span>
+                      <span style={{ fontSize: 11, color: "#7a9e8e" }}>{kwRecebido.toFixed(0)}/{kwDireito} kW</span>
+                    </div>
+                    <div style={{ height: 8, background: "#e8f5ef", borderRadius: 4, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${pct}%`, background: pct >= 100 ? "#2d6a4f" : pct > 50 ? "#40916c" : "#f5a623", borderRadius: 4, transition: "width 0.5s" }} />
+                    </div>
+                  </div>
+                );
+              })}
+              {beneficiarios.length > 5 && <div style={{ fontSize: 11, color: "#7a9e8e", fontStyle: "italic", textAlign: "center" }}>+{beneficiarios.length - 5} beneficiários</div>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── App Principal ────────────────────────────────────────────────────────────
-const TABS = ["Produtores", "Beneficiários", "Configurações", "Redistribuição", "Relatórios"];
+const TABS = ["Dashboard", "Produtores", "Beneficiários", "Configurações", "Redistribuição", "Relatórios"];
 const DEFAULT_CONFIG = { kwPorMembro: 50, raioPadrao: 3, raiosProdutores: {} };
 
 export default function App() {
@@ -1122,11 +1287,12 @@ export default function App() {
         {TABS.map((t, i) => <button key={t} style={S.navBtn(tab === i)} onClick={() => setTab(i)}>{t}</button>)}
       </div>
       <div style={S.main}>
-        {tab === 0 && <TabProdutores produtores={produtores} polygonFeature={polygonFeature} listaFreguesias={listaFreguesias} />}
-        {tab === 1 && <TabBeneficiarios beneficiarios={beneficiarios} polygonFeature={polygonFeature} listaFreguesias={listaFreguesias} />}
-        {tab === 2 && <TabConfiguracoes config={config} produtores={produtores} beneficiarios={beneficiarios} polygonFeature={polygonFeature} setPolygonFeature={setPolygonFeature} setListaFreguesias={setListaFreguesias} />}
-        {tab === 3 && <TabRedistribuicao produtores={produtores} beneficiarios={beneficiarios} config={config} polygonFeature={polygonFeature} />}
-        {tab === 4 && <TabRelatorios relatorios={relatorios} />}
+        {tab === 0 && <TabDashboard produtores={produtores} beneficiarios={beneficiarios} relatorios={relatorios} config={config} polygonFeature={polygonFeature} />}
+        {tab === 1 && <TabProdutores produtores={produtores} polygonFeature={polygonFeature} listaFreguesias={listaFreguesias} />}
+        {tab === 2 && <TabBeneficiarios beneficiarios={beneficiarios} polygonFeature={polygonFeature} listaFreguesias={listaFreguesias} />}
+        {tab === 3 && <TabConfiguracoes config={config} produtores={produtores} beneficiarios={beneficiarios} polygonFeature={polygonFeature} setPolygonFeature={setPolygonFeature} setListaFreguesias={setListaFreguesias} />}
+        {tab === 4 && <TabRedistribuicao produtores={produtores} beneficiarios={beneficiarios} config={config} polygonFeature={polygonFeature} />}
+        {tab === 5 && <TabRelatorios relatorios={relatorios} />}
       </div>
     </div>
   );
