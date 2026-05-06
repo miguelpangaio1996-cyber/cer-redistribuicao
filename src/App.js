@@ -151,7 +151,8 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
     }
 
     pontos.forEach(p => {
-      const lat = parseFloat(p.lat), lon = parseFloat(p.lon);
+      const lat = parseFloat(String(p.lat).replace(",", "."));
+      const lon = parseFloat(String(p.lon).replace(",", "."));
       if (isNaN(lat) || isNaN(lon)) return;
       bounds.push([lat, lon]);
 
@@ -183,6 +184,15 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
 
     if (bounds.length > 0) {
       try { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 }); } catch {}
+    } else if (polygonFeature) {
+      try {
+        const L = window.L;
+        const geoLayer = L.geoJSON(polygonFeature);
+        const b = geoLayer.getBounds();
+        if (b.isValid()) map.fitBounds(b, { padding: [40, 40] });
+      } catch {}
+    } else {
+      map.setView([39.7, -8.0], 8);
     }
   }, [pontos, mostrarRaios, config, polygonFeature, mapapronto]);
 
@@ -441,7 +451,7 @@ function TabProdutores({ produtores, polygonFeature, listaFreguesias }) {
                   <tr key={p.id}>
                     <td style={S.td}><span style={S.badge("blue")}>{p.cpe}</span></td>
                     <td style={S.td}>{p.nome}</td>
-                    <td style={S.td}>{p.localidade || "—"}</td>
+                    <td style={S.td}>{p.freguesia || p.localidade || "—"}</td>
                     <td style={S.td}>{p.potencia || "—"}</td>
                     <td style={S.td}>{polygonFeature ? <span style={S.badge(dentro ? "green" : "red")}>{dentro ? "✓ Dentro" : "✗ Fora"}</span> : <span style={{ color: "#b7ddd0", fontSize: 11 }}>—</span>}</td>
                     <td style={S.td}>
