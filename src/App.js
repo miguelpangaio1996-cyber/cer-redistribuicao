@@ -1209,6 +1209,183 @@ function gerarPDF(rel) {
   setTimeout(() => janela.print(), 500);
 }
 
+// ─── Aba Sobre / Metodologia ─────────────────────────────────────────────────
+function TabSobre() {
+  const sectionTitle = { fontSize: 16, fontWeight: 700, color: "#2d6a4f", marginBottom: 12, marginTop: 8 };
+  const paragraph = { fontSize: 13, color: "#3d5a4e", lineHeight: 1.7, marginBottom: 14 };
+  const highlight = { background: "linear-gradient(135deg, #f0faf5 0%, #e8f5ef 100%)", border: "1px solid #c8e6d8", borderRadius: 12, padding: 20, marginBottom: 20 };
+  const iconBox = { display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 16 };
+  const iconCircle = (bg) => ({ width: 40, height: 40, minWidth: 40, borderRadius: "50%", background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 });
+
+  return (
+    <div>
+      {/* Cabeçalho */}
+      <div style={{ ...S.card, background: "linear-gradient(135deg, #2d6a4f 0%, #40916c 100%)", color: "#fff", border: "none" }}>
+        <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Banco de Energia Solidário</div>
+        <div style={{ fontSize: 14, opacity: 0.9, fontStyle: "italic", marginBottom: 16 }}>
+          Plataforma de gestão para Comunidades de Energia Renovável (CER)
+        </div>
+        <div style={{ fontSize: 12, opacity: 0.75, lineHeight: 1.6 }}>
+          Desenvolvido no âmbito de tese de Engenharia de Produção Industrial — redistribuição de excedente fotovoltaico a famílias em situação de vulnerabilidade energética.
+        </div>
+      </div>
+
+      {/* Escassez Energética */}
+      <div style={S.card}>
+        <div style={sectionTitle}>⚡ O Problema: Escassez Energética</div>
+        <p style={paragraph}>
+          A escassez energética afeta milhões de famílias em Portugal e na Europa. Trata-se da incapacidade de uma família assegurar os serviços energéticos essenciais — aquecimento, arrefecimento, iluminação e eletrodomésticos básicos — a um custo comportável. Em Portugal, estima-se que uma parcela significativa da população vive em situação de pobreza energética, com impactos diretos na saúde, bem-estar e qualidade de vida.
+        </p>
+        <p style={paragraph}>
+          Simultaneamente, milhares de instalações fotovoltaicas residenciais produzem excedentes de energia que são injetados na rede elétrica a custo zero ou a valores residuais, sem qualquer benefício direto para a comunidade local. Existe, portanto, um paradoxo: energia renovável desperdiçada enquanto famílias vizinhas não conseguem pagar as suas faturas.
+        </p>
+      </div>
+
+      {/* Objetivo */}
+      <div style={S.card}>
+        <div style={sectionTitle}>🎯 Objetivo da Plataforma</div>
+        <p style={paragraph}>
+          O Banco de Energia Solidário pretende resolver esta desconexão, criando um mecanismo transparente e georreferenciado de redistribuição do excedente fotovoltaico dentro de uma Comunidade de Energia Renovável (CER). A plataforma permite:
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+          <div style={highlight}>
+            <div style={iconBox}>
+              <div style={iconCircle("#fef3dc")}>☀</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Registar Produtores</div>
+                <div style={{ fontSize: 12, color: "#7a9e8e", lineHeight: 1.5 }}>Proprietários de painéis solares com excedente energético disponível para partilha com a comunidade.</div>
+              </div>
+            </div>
+          </div>
+          <div style={highlight}>
+            <div style={iconBox}>
+              <div style={iconCircle("#d8f3e8")}>🏠</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Registar Beneficiários</div>
+                <div style={{ fontSize: 12, color: "#7a9e8e", lineHeight: 1.5 }}>Famílias sinalizadas pela IPSS local em situação de vulnerabilidade energética, com o respetivo agregado familiar.</div>
+              </div>
+            </div>
+          </div>
+          <div style={highlight}>
+            <div style={iconBox}>
+              <div style={iconCircle("#dceefb")}>🔄</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Redistribuir Energia</div>
+                <div style={{ fontSize: 12, color: "#7a9e8e", lineHeight: 1.5 }}>Algoritmo de alocação proporcional que distribui kW excedentes pelos beneficiários com base na proximidade geográfica e na dimensão do agregado.</div>
+              </div>
+            </div>
+          </div>
+          <div style={highlight}>
+            <div style={iconBox}>
+              <div style={iconCircle("#fde8e8")}>📊</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Monitorizar e Reportar</div>
+                <div style={{ fontSize: 12, color: "#7a9e8e", lineHeight: 1.5 }}>Dashboards, relatórios mensais e exportação Excel para acompanhar a eficácia da redistribuição ao longo do tempo.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Como Funciona */}
+      <div style={S.card}>
+        <div style={sectionTitle}>🔧 Como Funciona</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div style={iconBox}>
+            <div style={{ ...iconCircle("#fef3dc"), fontSize: 14, fontWeight: 700, color: "#b07c10" }}>1</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Deteção de Painéis Solares</div>
+              <p style={{ ...paragraph, marginBottom: 0 }}>
+                Através de modelos de deteção de objetos (YOLO) aplicados a imagens de satélite e ortofotomapas, são identificados os painéis fotovoltaicos existentes na freguesia. As deteções são filtradas em QGIS com polígonos de edifícios para reduzir falsos positivos, garantindo que apenas painéis reais em telhados são considerados.
+              </p>
+            </div>
+          </div>
+          <div style={iconBox}>
+            <div style={{ ...iconCircle("#d8f3e8"), fontSize: 14, fontWeight: 700, color: "#1e7a4a" }}>2</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Inputs e Registo</div>
+              <p style={{ ...paragraph, marginBottom: 0 }}>
+                Os dados dos produtores (CPE, potência instalada, coordenadas, freguesia) e dos beneficiários (CPE, agregado familiar, localização) são inseridos na plataforma. Os beneficiários são sinalizados pela IPSS local, que valida a situação de vulnerabilidade. Toda a informação é armazenada em base de dados Firebase com sincronização em tempo real.
+              </p>
+            </div>
+          </div>
+          <div style={iconBox}>
+            <div style={{ ...iconCircle("#dceefb"), fontSize: 14, fontWeight: 700, color: "#2563a8" }}>3</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Triangulação Geográfica</div>
+              <p style={{ ...paragraph, marginBottom: 0 }}>
+                A redistribuição usa triangulação por coordenadas GPS com raios configuráveis (tipicamente 2–4 km) para cruzar produtores e beneficiários. Apenas beneficiários dentro do raio de ação de um produtor — e dentro do limite da freguesia — são elegíveis para receber energia desse produtor.
+              </p>
+            </div>
+          </div>
+          <div style={iconBox}>
+            <div style={{ ...iconCircle("#f3e8fd"), fontSize: 14, fontWeight: 700, color: "#7c3aed" }}>4</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Algoritmo de Redistribuição</div>
+              <p style={{ ...paragraph, marginBottom: 0 }}>
+                O excedente de cada produtor é distribuído proporcionalmente pelo número de membros do agregado familiar de cada beneficiário elegível. Cada membro dá direito a uma quota de kW (configurável). O algoritmo prioriza a proximidade geográfica e garante distribuição equitativa. Os resultados são guardados como relatórios mensais.
+              </p>
+            </div>
+          </div>
+          <div style={iconBox}>
+            <div style={{ ...iconCircle("#fde8e8"), fontSize: 14, fontWeight: 700, color: "#c0392b" }}>5</div>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Output e Acompanhamento</div>
+              <p style={{ ...paragraph, marginBottom: 0 }}>
+                Os relatórios de redistribuição são exportáveis em Excel (input/output) para partilha com a IPSS, a distribuidora e os participantes. O dashboard fornece indicadores de cobertura: famílias servidas, kW distribuídos vs. não alocados, e evolução mensal. O simulador permite testar cenários antes de executar a redistribuição real.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Potencial */}
+      <div style={S.card}>
+        <div style={sectionTitle}>🚀 Potencial e Visão Futura</div>
+        <p style={paragraph}>
+          Esta plataforma demonstra que é tecnicamente viável redistribuir excedentes fotovoltaicos a nível local, com transparência e rastreabilidade total. O modelo é replicável a qualquer freguesia ou município de Portugal, bastando carregar o GeoJSON da região e registar os participantes.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+          <div style={{ ...highlight, textAlign: "center" }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>📱</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>App de Gestão</div>
+            <div style={{ fontSize: 11, color: "#7a9e8e", lineHeight: 1.5 }}>Implementação futura de aplicação móvel para gestão em tempo real pelos técnicos da IPSS.</div>
+          </div>
+          <div style={{ ...highlight, textAlign: "center" }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>🤖</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Deteção Automática</div>
+            <div style={{ fontSize: 11, color: "#7a9e8e", lineHeight: 1.5 }}>Refinamento contínuo do modelo YOLO para deteção mais precisa com filtragem QGIS avançada.</div>
+          </div>
+          <div style={{ ...highlight, textAlign: "center" }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>🌍</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Escalabilidade</div>
+            <div style={{ fontSize: 11, color: "#7a9e8e", lineHeight: 1.5 }}>Modelo replicável a nível nacional, adaptável a diferentes comunidades e contextos regulatórios.</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Enquadramento */}
+      <div style={S.card}>
+        <div style={sectionTitle}>📚 Enquadramento</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div style={{ padding: "16px 20px", background: "#f8fdfb", borderRadius: 10, border: "1px solid #d8ede6" }}>
+            <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Contexto Académico</div>
+            <div style={{ fontSize: 13, color: "#3d5a4e", lineHeight: 1.6 }}>
+              Tese de Engenharia de Produção Industrial — deteção de painéis solares com YOLO/QGIS e redistribuição de excedente fotovoltaico via IPSS.
+            </div>
+          </div>
+          <div style={{ padding: "16px 20px", background: "#f8fdfb", borderRadius: 10, border: "1px solid #d8ede6" }}>
+            <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Tecnologias</div>
+            <div style={{ fontSize: 13, color: "#3d5a4e", lineHeight: 1.6 }}>
+              React · Firebase Firestore · Leaflet · YOLO (deteção) · QGIS (SIG) · Haversine (distâncias) · Excel (I/O)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TabRelatorios({ relatorios }) {
   const [selecionado, setSelecionado] = useState(null);
 
@@ -1783,7 +1960,7 @@ function TabSimulador({ produtores, beneficiarios, config, polygonFeature }) {
 }
 
 // ─── App Principal ────────────────────────────────────────────────────────────
-const TABS = ["Dashboard", "Produtores", "Beneficiários", "Configurações", "Redistribuição", "Simulador", "Relatórios"];
+const TABS = ["Dashboard", "Produtores", "Beneficiários", "Configurações", "Redistribuição", "Simulador", "Relatórios", "Sobre"];
 const DEFAULT_CONFIG = { kwPorMembro: 50, raioPadrao: 3, raiosProdutores: {}, metodoRedistribuicao: "proporcional" };
 
 export default function App() {
@@ -1856,6 +2033,7 @@ export default function App() {
         {tab === 4 && <TabRedistribuicao produtores={produtores} beneficiarios={beneficiarios} config={config} polygonFeature={polygonFeature} />}
         {tab === 5 && <TabSimulador produtores={produtores} beneficiarios={beneficiarios} config={config} polygonFeature={polygonFeature} />}
         {tab === 6 && <TabRelatorios relatorios={relatorios} />}
+        {tab === 7 && <TabSobre />}
       </div>
     </div>
   );
