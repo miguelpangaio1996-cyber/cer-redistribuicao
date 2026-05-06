@@ -91,57 +91,12 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layersRef = useRef([]);
-  const [mapapronto, setMapaPronto] = useState(false);
+  const initializedRef = useRef(false);
 
-  useEffect(() => {
-    if (!document.getElementById("leaflet-css")) {
-      const link = document.createElement("link");
-      link.id = "leaflet-css";
-      link.rel = "stylesheet";
-      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-      document.head.appendChild(link);
-    }
-
-    const initMap = () => {
-      if (!mapRef.current || mapInstanceRef.current) return;
-      const L = window.L;
-      if (!L) return;
-      const map = L.map(mapRef.current, { zoomControl: true }).setView([39.5, -8.0], 7);
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-        attribution: "© OpenStreetMap © CARTO",
-        subdomains: "abcd",
-        maxZoom: 19,
-      }).addTo(map);
-      mapInstanceRef.current = map;
-      setMapaPronto(true);
-    };
-
-    if (!window.L) {
-      const script = document.createElement("script");
-      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.onload = () => setTimeout(initMap, 300);
-      document.head.appendChild(script);
-    } else {
-      setTimeout(initMap, 300);
-    }
-
-    return () => {
-      if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!mapapronto) return;
-    const timer = setTimeout(() => {
-      const L = window.L;
-      const map = mapInstanceRef.current;
-      if (!L || !map) return;
-      addPins(L, map);
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [pontos, mostrarRaios, config, polygonFeature, mapapronto]);
-
-  const addPins = (L, map) => {
+  const renderMap = () => {
+    const L = window.L;
+    const map = mapInstanceRef.current;
+    if (!L || !map) return;
 
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
@@ -206,6 +161,49 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
       map.setView([39.7, -8.0], 8);
     }
   };
+
+  useEffect(() => {
+    if (!document.getElementById("leaflet-css")) {
+      const link = document.createElement("link");
+      link.id = "leaflet-css";
+      link.rel = "stylesheet";
+      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+      document.head.appendChild(link);
+    }
+
+    const initMap = () => {
+      if (!mapRef.current || mapInstanceRef.current) return;
+      const L = window.L;
+      if (!L) return;
+      const map = L.map(mapRef.current, { zoomControl: true }).setView([39.7, -8.5], 9);
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        attribution: "© OpenStreetMap © CARTO",
+        subdomains: "abcd",
+        maxZoom: 19,
+      }).addTo(map);
+      mapInstanceRef.current = map;
+      setTimeout(() => renderMap(), 600);
+    };
+
+    if (!window.L) {
+      const script = document.createElement("script");
+      script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+      script.onload = () => setTimeout(initMap, 200);
+      document.head.appendChild(script);
+    } else {
+      setTimeout(initMap, 200);
+    }
+
+    return () => {
+      if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+    const timer = setTimeout(() => renderMap(), 300);
+    return () => clearTimeout(timer);
+  }, [pontos, mostrarRaios, config, polygonFeature]);
 
   return (
     <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #d8ede6" }}>
