@@ -1469,8 +1469,191 @@ function TabDashboard({ produtores, beneficiarios, relatorios, config, polygonFe
   );
 }
 
+
+// ─── Aba Simulador ────────────────────────────────────────────────────────────
+function TabSimulador({ produtores, beneficiarios, config, polygonFeature }) {
+  const [kwSim, setKwSim] = useState({});
+  const [resultado, setResultado] = useState(null);
+  const [metodoSim, setMetodoSim] = useState(config.metodoRedistribuicao || "proporcional");
+  const [kwPorMembroSim, setKwPorMembroSim] = useState(config.kwPorMembro || 50);
+  const [raioPadraoSim, setRaioPadraoSim] = useState(config.raioPadrao || 3);
+  const [verMapa, setVerMapa] = useState(false);
+
+  const limFrg = polygonFeature?.properties?.freguesia;
+  const produtoresValidos = limFrg ? produtores.filter(p => p.freguesia === limFrg && p.lat && p.lon) : produtores.filter(p => p.lat && p.lon);
+  const beneficiariosValidos = limFrg ? beneficiarios.filter(b => b.freguesia === limFrg && b.lat && b.lon) : beneficiarios.filter(b => b.lat && b.lon);
+
+  const pontosMapa = [
+    ...produtoresValidos.map(p => ({ ...p, tipo: "produtor" })),
+    ...beneficiariosValidos.map(b => ({ ...b, tipo: "beneficiario" })),
+  ];
+
+  const simularTudo = () => {
+    const kw = {};
+    produtoresValidos.forEach(p => { kw[p.id] = parseFloat(p.potencia) || 0; });
+    setKwSim(kw);
+  };
+
+  const executarSimulacao = () => {
+    const configSim = { ...config, kwPorMembro: kwPorMembroSim, raioPadrao: raioPadraoSim, metodoRedistribuicao: metodoSim };
+    const res = executarRedistribuicao(produtores, beneficiarios, configSim, kwSim, polygonFeature);
+    setResultado(res);
+  };
+
+  const limpar = () => { setKwSim({}); setResultado(null); };
+
+  const taxaSatisfacao = resultado ? (
+    resultado.beneficiariosValidos.length > 0
+      ? (resultado.beneficiariosValidos.filter(b => (resultado.recebido[b.id] || 0) >= (resultado.direito[b.id] || 1)).length / resultado.beneficiariosValidos.length * 100).toFixed(0)
+      : 0
+  ) : null;
+
+  return (
+    <div>
+      {/* Aviso simulador */}
+      <div style={{ ...S.alert("info"), marginBottom: 20 }}>
+        🧪 <b>Modo Simulação</b> — Os resultados aqui não são guardados nem afetam os dados reais. Experimenta diferentes cenários antes de executar a redistribuição oficial.
+      </div>
+
+      {/* Parâmetros de simulação */}
+      <div style={S.card}>
+        <div style={S.cardTitle}>⚙ Parâmetros da Simulação</div>
+        <div style={S.grid3}>
+          <div style={S.field}>
+            <label style={S.label}>kW por membro de agregado</label>
+            <input style={S.input} type="number" value={kwPorMembroSim} onChange={e => setKwPorMembroSim(e.target.value)} />
+            <div style={{ fontSize: 11, color: "#7a9e8e", marginTop: 4, fontStyle: "italic" }}>Configuração atual: {config.kwPorMembro} kW</div>
+          </div>
+          <div style={S.field}>
+            <label style={S.label}>Raio padrão (km)</label>
+            <input style={S.input} type="number" value={raioPadraoSim} onChange={e => setRaioPadraoSim(e.target.value)} />
+            <div style={{ fontSize: 11, color: "#7a9e8e", marginTop: 4, fontStyle: "italic" }}>Configuração atual: {config.raioPadrao} km</div>
+          </div>
+          <div style={S.field}>
+            <label style={S.label}>Método de redistribuição</label>
+            <select style={S.select} value={metodoSim} onChange={e => setMetodoSim(e.target.value)}>
+              <option value="proporcional">Proporcional ao agregado</option>
+              <option value="satisfacao">Satisfação completa por distância</option>
+              <option value="igualitario">Igualitário</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* kW disponíveis */}
+      <div style={S.card}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ ...S.cardTitle, marginBottom: 0 }}>☀ kW Disponíveis por Produtor</div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button style={S.btn("ghost")} onClick={simularTudo}>Usar potência instalada</button>
+            <button style={S.btn("ghost")} onClick={limpar}>Limpar</button>
+          </div>
+        </div>
+        {produtoresValidos.length === 0 ? <div style={S.empty}>Sem produtores elegíveis</div> : (
+          <table style={S.table}>
+            <thead><tr><th style={S.th}>CPE</th><th style={S.th}>Nome</th><th style={S.th}>Pot. Instalada</th><th style={S.th}>kW para simular</th></tr></thead>
+            <tbody>
+              {produtoresValidos.map(p => (
+                <tr key={p.id}>
+                  <td style={S.td}><span style={S.badge("orange")}>{p.cpe}</span></td>
+                  <td style={S.td}>{p.nome}</td>
+                  <td style={{ ...S.td, color: "#7a9e8e" }}>{p.potencia || "—"} kW</td>
+                  <td style={S.td}>
+                    <input style={{ ...S.input, width: 120 }} type="number" value={kwSim[p.id] || ""} onChange={e => setKwSim(prev => ({ ...prev, [p.id]: e.target.value }))} placeholder="0" />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
+        <button style={S.btn("green")} onClick={executarSimulacao}>🧪 Simular Redistribuição</button>
+      </div>
+
+      {/* Resultado da simulação */}
+      {resultado && (
+        <div>
+          <div style={S.card}>
+            <div style={S.cardTitle}>📊 Resultado da Simulação</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
+              <div style={S.statBox}><div style={S.statNum}>{resultado.linhas.length}</div><div style={S.statLabel}>Atribuições</div></div>
+              <div style={S.statBox}><div style={S.statNum}>{resultado.linhas.reduce((s, l) => s + l.kw, 0).toFixed(1)}</div><div style={S.statLabel}>kW Distribuídos</div></div>
+              <div style={S.statBox}><div style={{ ...S.statNum, color: Object.keys(resultado.naoAlocado).length ? "#e05c5c" : "#2d6a4f" }}>{Object.values(resultado.naoAlocado).reduce((s, v) => s + v, 0).toFixed(1)}</div><div style={S.statLabel}>kW Não Alocados</div></div>
+              <div style={S.statBox}><div style={{ ...S.statNum, color: taxaSatisfacao >= 100 ? "#2d6a4f" : taxaSatisfacao >= 50 ? "#f5a623" : "#e05c5c" }}>{taxaSatisfacao}%</div><div style={S.statLabel}>Famílias Satisfeitas</div></div>
+            </div>
+
+            {/* Satisfação por beneficiário */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 12, color: "#2d6a4f", fontWeight: 700, marginBottom: 12 }}>Satisfação por Beneficiário</div>
+              {resultado.beneficiariosValidos.map(b => {
+                const kwR = resultado.recebido[b.id] || 0;
+                const kwD = resultado.direito[b.id] || 1;
+                const pct = Math.min((kwR / kwD) * 100, 100);
+                return (
+                  <div key={b.id} style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, color: "#3d5a4e" }}>{b.nome} <span style={{ color: "#7a9e8e", fontSize: 11 }}>({b.membros?.length || 1} membro(s))</span></span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: pct >= 100 ? "#2d6a4f" : pct > 0 ? "#f5a623" : "#e05c5c" }}>{kwR.toFixed(1)} / {kwD} kW ({pct.toFixed(0)}%)</span>
+                    </div>
+                    <div style={{ height: 10, background: "#e8f5ef", borderRadius: 5, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${pct}%`, background: pct >= 100 ? "#2d6a4f" : pct > 50 ? "#40916c" : "#f5a623", borderRadius: 5, transition: "width 0.5s" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <table style={S.table}>
+              <thead><tr><th style={S.th}>Produtor CPE</th><th style={S.th}>Beneficiário CPE</th><th style={S.th}>Nome</th><th style={S.th}>kW</th><th style={S.th}>Dist. (km)</th></tr></thead>
+              <tbody>
+                {resultado.linhas.map((l, i) => (
+                  <tr key={i}>
+                    <td style={S.td}><span style={S.badge("orange")}>{l.prodCPE}</span></td>
+                    <td style={S.td}><span style={S.badge("green")}>{l.benCPE}</span></td>
+                    <td style={S.td}>{l.benNome}</td>
+                    <td style={S.td}>{l.kw.toFixed(2)}</td>
+                    <td style={S.td}>{l.distKm}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {Object.keys(resultado.naoAlocado).length > 0 && (
+              <div style={{ ...S.alert("err"), marginTop: 16 }}>
+                ⚠ kW não alocados: {produtores.filter(p => resultado.naoAlocado[p.id]).map(p => `${p.cpe}: ${resultado.naoAlocado[p.id].toFixed(2)} kW`).join(" | ")}
+              </div>
+            )}
+          </div>
+
+          {/* Mapa da simulação */}
+          <div style={S.card}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ ...S.cardTitle, marginBottom: 0 }}>🗺 Mapa da Simulação</div>
+              <button style={S.btn(verMapa ? "primary" : "ghost")} onClick={() => setVerMapa(v => !v)}>
+                {verMapa ? "Ocultar" : "Ver Mapa"}
+              </button>
+            </div>
+            {verMapa && (
+              <div style={{ marginTop: 20 }}>
+                <LeafletMap pontos={pontosMapa} mostrarRaios={true} config={{ ...config, raioPadrao: raioPadraoSim }} polygonFeature={polygonFeature} linhasRedistribuicao={resultado.linhas} />
+                <div style={{ display: "flex", gap: 20, marginTop: 10, fontSize: 12, color: "#7a9e8e", fontStyle: "italic" }}>
+                  <span>☀ Produtores</span>
+                  <span>🏠 Beneficiários</span>
+                  <span>― Linhas = fluxo simulado</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── App Principal ────────────────────────────────────────────────────────────
-const TABS = ["Dashboard", "Produtores", "Beneficiários", "Configurações", "Redistribuição", "Relatórios"];
+const TABS = ["Dashboard", "Produtores", "Beneficiários", "Configurações", "Redistribuição", "Simulador", "Relatórios"];
 const DEFAULT_CONFIG = { kwPorMembro: 50, raioPadrao: 3, raiosProdutores: {}, metodoRedistribuicao: "proporcional" };
 
 export default function App() {
@@ -1541,7 +1724,8 @@ export default function App() {
         {tab === 2 && <TabBeneficiarios beneficiarios={beneficiarios} polygonFeature={polygonFeature} listaFreguesias={listaFreguesias} />}
         {tab === 3 && <TabConfiguracoes config={config} produtores={produtores} beneficiarios={beneficiarios} polygonFeature={polygonFeature} setPolygonFeature={setPolygonFeature} setListaFreguesias={setListaFreguesias} />}
         {tab === 4 && <TabRedistribuicao produtores={produtores} beneficiarios={beneficiarios} config={config} polygonFeature={polygonFeature} />}
-        {tab === 5 && <TabRelatorios relatorios={relatorios} />}
+        {tab === 5 && <TabSimulador produtores={produtores} beneficiarios={beneficiarios} config={config} polygonFeature={polygonFeature} />}
+        {tab === 6 && <TabRelatorios relatorios={relatorios} />}
       </div>
     </div>
   );
