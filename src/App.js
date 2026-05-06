@@ -795,6 +795,56 @@ function TabConfiguracoes({ config, produtores, beneficiarios, polygonFeature, s
           </table>
         )}
       </div>
+      {/* Método de redistribuição */}
+      <div style={S.card}>
+        <div style={S.cardTitle}>⚖ Método de Redistribuição</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {[
+            {
+              id: "proporcional",
+              titulo: "Proporcional ao agregado",
+              descricao: "Cada produtor distribui os seus kW proporcionalmente ao número de membros de cada agregado. Famílias maiores recebem mais, famílias menores recebem menos. Garante equidade relativa entre todos os beneficiários dentro do raio."
+            },
+            {
+              id: "satisfacao",
+              titulo: "Satisfação completa por distância",
+              descricao: "O produtor tenta satisfazer completamente cada beneficiário antes de passar ao próximo, começando pelo mais próximo. Garante que alguns beneficiários ficam totalmente satisfeitos, mas outros podem não receber nada se os kW esgotarem."
+            },
+            {
+              id: "igualitario",
+              titulo: "Igualitário",
+              descricao: "Todos os beneficiários dentro do raio recebem exatamente o mesmo valor de kW, independentemente do tamanho do agregado. Método mais simples e transparente, ideal para comunidades com agregados de dimensão semelhante."
+            }
+          ].map(m => (
+            <div
+              key={m.id}
+              onClick={() => setLocal(p => ({ ...p, metodoRedistribuicao: m.id }))}
+              style={{
+                padding: "16px 18px",
+                borderRadius: 10,
+                border: `2px solid ${local.metodoRedistribuicao === m.id ? "#2d6a4f" : "#d8ede6"}`,
+                background: local.metodoRedistribuicao === m.id ? "#f0faf5" : "#fafafa",
+                cursor: "pointer",
+                transition: "all 0.2s"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <div style={{
+                  width: 18, height: 18, borderRadius: "50%",
+                  border: `2px solid ${local.metodoRedistribuicao === m.id ? "#2d6a4f" : "#b7ddd0"}`,
+                  background: local.metodoRedistribuicao === m.id ? "#2d6a4f" : "white",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+                }}>
+                  {local.metodoRedistribuicao === m.id && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "white" }} />}
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: local.metodoRedistribuicao === m.id ? "#2d6a4f" : "#3d5a4e" }}>{m.titulo}</div>
+              </div>
+              <div style={{ fontSize: 12, color: "#7a9e8e", lineHeight: 1.6, paddingLeft: 28, fontStyle: "italic" }}>{m.descricao}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
         <button style={S.btn("primary")} onClick={guardar}>Guardar Configurações</button>
       </div>
@@ -804,6 +854,7 @@ function TabConfiguracoes({ config, produtores, beneficiarios, polygonFeature, s
 
 // ─── Lógica de Redistribuição ─────────────────────────────────────────────────
 function executarRedistribuicao(produtores, beneficiarios, config, kwDisponivel, polygonFeature) {
+  const metodo = config.metodoRedistribuicao || "proporcional";
   const kwPorMembro = parseFloat(config.kwPorMembro) || 50;
   const raioPadrao = parseFloat(config.raioPadrao) || 3;
   const raiosProd = config.raiosProdutores || {};
@@ -830,25 +881,81 @@ function executarRedistribuicao(produtores, beneficiarios, config, kwDisponivel,
     if (!kwTotal) return;
     const raio = parseFloat(raiosProd[prod.id] || raioPadrao);
     const latP = parseFloat(prod.lat), lonP = parseFloat(prod.lon);
+
+    // Beneficiários elegíveis dentro do raio com direito por satisfazer
     const elegiveis = beneficiariosValidos.filter(b => {
       const latB = parseFloat(b.lat), lonB = parseFloat(b.lon);
       if (isNaN(latP) || isNaN(lonP) || isNaN(latB) || isNaN(lonB)) return false;
       return haversine(latP, lonP, latB, lonB) <= raio && recebido[b.id] < direito[b.id];
     });
+
     if (!elegiveis.length) { naoAlocado[prod.id] = kwTotal; return; }
+
     let kwRestante = kwTotal;
-    const totalMembros = elegiveis.reduce((s, b) => s + (b.membros?.length || 1), 0);
-    elegiveis.forEach(b => {
-      const membros = b.membros?.length || 1;
-      const proporcional = (membros / totalMembros) * kwTotal;
-      const necessario = direito[b.id] - recebido[b.id];
-      const atribuir = Math.min(proporcional, necessario, kwRestante);
-      if (atribuir > 0) {
-        recebido[b.id] += atribuir;
-        kwRestante -= atribuir;
-        linhas.push({ prodId: prod.id, prodCPE: prod.cpe, prodNome: prod.nome, benId: b.id, benCPE: b.cpe, benNome: b.nome, kw: atribuir, distKm: haversine(latP, lonP, parseFloat(b.lat), parseFloat(b.lon)).toFixed(2) });
+
+    if (metodo === "proporcional") {
+      // Distribuição proporcional ao nº de membros do agregado
+      let continuar = true;
+      while (continuar && kwRestante > 0.001) {
+        continuar = false;
+        const ativos = elegiveis.filter(b => recebido[b.id] < direito[b.id]);
+        if (!ativos.length) break;
+        const totalMembros = ativos.reduce((s, b) => s + (b.membros?.length || 1), 0);
+        ativos.forEach(b => {
+          if (kwRestante <= 0) return;
+          const membros = b.membros?.length || 1;
+          const quota = (membros / totalMembros) * kwRestante;
+          const necessario = direito[b.id] - recebido[b.id];
+          const atribuir = Math.min(quota, necessario, kwRestante);
+          if (atribuir > 0.001) {
+            recebido[b.id] += atribuir;
+            kwRestante -= atribuir;
+            if (atribuir < quota - 0.001) continuar = true;
+            linhas.push({ prodId: prod.id, prodCPE: prod.cpe, prodNome: prod.nome, benId: b.id, benCPE: b.cpe, benNome: b.nome, kw: atribuir, distKm: haversine(latP, lonP, parseFloat(b.lat), parseFloat(b.lon)).toFixed(2) });
+          }
+        });
       }
-    });
+
+    } else if (metodo === "satisfacao") {
+      // Satisfação completa por distância (mais próximo primeiro)
+      const elegiveisOrdenados = [...elegiveis].sort((a, b) => {
+        const dA = haversine(latP, lonP, parseFloat(a.lat), parseFloat(a.lon));
+        const dB = haversine(latP, lonP, parseFloat(b.lat), parseFloat(b.lon));
+        return dA - dB;
+      });
+      for (const b of elegiveisOrdenados) {
+        if (kwRestante <= 0) break;
+        const necessario = direito[b.id] - recebido[b.id];
+        const atribuir = Math.min(necessario, kwRestante);
+        if (atribuir > 0.001) {
+          recebido[b.id] += atribuir;
+          kwRestante -= atribuir;
+          linhas.push({ prodId: prod.id, prodCPE: prod.cpe, prodNome: prod.nome, benId: b.id, benCPE: b.cpe, benNome: b.nome, kw: atribuir, distKm: haversine(latP, lonP, parseFloat(b.lat), parseFloat(b.lon)).toFixed(2) });
+        }
+      }
+
+    } else if (metodo === "igualitario") {
+      // Distribuição igualitária — mesmo valor para todos
+      let continuar = true;
+      while (continuar && kwRestante > 0.001) {
+        continuar = false;
+        const ativos = elegiveis.filter(b => recebido[b.id] < direito[b.id]);
+        if (!ativos.length) break;
+        const quotaIgual = kwRestante / ativos.length;
+        ativos.forEach(b => {
+          if (kwRestante <= 0) return;
+          const necessario = direito[b.id] - recebido[b.id];
+          const atribuir = Math.min(quotaIgual, necessario, kwRestante);
+          if (atribuir > 0.001) {
+            recebido[b.id] += atribuir;
+            kwRestante -= atribuir;
+            if (atribuir < quotaIgual - 0.001) continuar = true;
+            linhas.push({ prodId: prod.id, prodCPE: prod.cpe, prodNome: prod.nome, benId: b.id, benCPE: b.cpe, benNome: b.nome, kw: atribuir, distKm: haversine(latP, lonP, parseFloat(b.lat), parseFloat(b.lon)).toFixed(2) });
+          }
+        });
+      }
+    }
+
     if (kwRestante > 0.001) naoAlocado[prod.id] = kwRestante;
   });
   return { linhas, naoAlocado, recebido, direito, produtoresValidos, beneficiariosValidos };
@@ -1265,7 +1372,7 @@ function TabDashboard({ produtores, beneficiarios, relatorios, config, polygonFe
 
 // ─── App Principal ────────────────────────────────────────────────────────────
 const TABS = ["Dashboard", "Produtores", "Beneficiários", "Configurações", "Redistribuição", "Relatórios"];
-const DEFAULT_CONFIG = { kwPorMembro: 50, raioPadrao: 3, raiosProdutores: {} };
+const DEFAULT_CONFIG = { kwPorMembro: 50, raioPadrao: 3, raiosProdutores: {}, metodoRedistribuicao: "proporcional" };
 
 export default function App() {
   const [tab, setTab] = useState(0);
