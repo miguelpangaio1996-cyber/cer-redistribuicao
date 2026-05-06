@@ -606,16 +606,18 @@ function TabConfiguracoes({ config, produtores, beneficiarios, polygonFeature, s
     const freguesia = polygonFeature.properties.freguesia;
     const municipio = polygonFeature.properties.municipio;
     const distrito = polygonFeature.properties.distrito_ilha;
+    if (!freguesia) { alert("Limite ativo não tem freguesia definida. Volta a selecionar e guardar."); return; }
+    if (!confirm(`Aplicar a freguesia "${freguesia}" a todos os produtores e beneficiários sem freguesia definida?`)) return;
     let count = 0;
 
     for (const p of produtores) {
-      if (!p.freguesia && p.lat && p.lon && pointInFeature(parseFloat(p.lat), parseFloat(p.lon), polygonFeature)) {
+      if (!p.freguesia) {
         await setDoc(doc(db, "produtores", p.id), { ...p, freguesia, municipio, distrito });
         count++;
       }
     }
     for (const b of beneficiarios) {
-      if (!b.freguesia && b.lat && b.lon && pointInFeature(parseFloat(b.lat), parseFloat(b.lon), polygonFeature)) {
+      if (!b.freguesia) {
         await setDoc(doc(db, "beneficiarios", b.id), { ...b, freguesia, municipio, distrito });
         count++;
       }
