@@ -149,16 +149,19 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
     });
 
     if (bounds.length > 0) {
-      try { map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 }); } catch {}
-    } else if (polygonFeature) {
       try {
-        const L = window.L;
-        const geoLayer = L.geoJSON(polygonFeature);
-        const b = geoLayer.getBounds();
-        if (b.isValid()) map.fitBounds(b, { padding: [40, 40] });
-      } catch {}
+        const lBounds = window.L.latLngBounds(bounds.map(b => window.L.latLng(b[0], b[1])));
+        if (lBounds.isValid()) {
+          map.fitBounds(lBounds, { padding: [50, 50], maxZoom: 14, animate: false });
+        } else {
+          map.setView([40.9, -8.5], 12);
+        }
+      } catch(e) {
+        console.error("fitBounds error:", e);
+        map.setView([40.9, -8.5], 12);
+      }
     } else {
-      map.setView([39.7, -8.0], 8);
+      map.setView([40.9, -8.5], 12);
     }
   };
 
