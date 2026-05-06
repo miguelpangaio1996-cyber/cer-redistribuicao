@@ -155,7 +155,9 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
       if (isNaN(lat) || isNaN(lon)) return;
       bounds.push([lat, lon]);
 
-      const dentroLimite = pointInFeature(lat, lon, polygonFeature);
+      const frg = p.freguesia;
+      const limFregMapa = polygonFeature?.properties?.freguesia;
+      const dentroLimite = !limFregMapa || !frg || frg === limFregMapa;
       const cor = p.tipo === "produtor" ? "#e8820c" : "#2d6a4f";
       const corFora = "#aaaaaa";
       const emoji = p.tipo === "produtor" ? "☀" : "🏠";
@@ -242,6 +244,7 @@ function FormProdutor({ initial, onSave, onCancel, polygonFeature, listaFreguesi
           <div style={S.field}><label style={S.label}>Lon.</label><input style={S.input} type="number" value={f.lon} onChange={set("lon")} placeholder="-9.1..." /></div>
         </div>
       </div>
+      <div style={S.field}><label style={S.label}>Localidade</label><input style={S.input} value={f.localidade || ""} onChange={set("localidade")} placeholder="Ex: Espargo" /></div>
       {listaFreguesias && listaFreguesias.length > 0 ? (
         <div style={S.grid3}>
           <div style={S.field}><label style={S.label}>Distrito</label>
@@ -317,6 +320,7 @@ function FormBeneficiario({ initial, onSave, onCancel, polygonFeature, listaFreg
         </div>
       </div>
       <div style={S.field}><label style={S.label}>Morada</label><input style={S.input} value={f.morada} onChange={set("morada")} /></div>
+      <div style={S.field}><label style={S.label}>Localidade</label><input style={S.input} value={f.localidade || ""} onChange={set("localidade")} placeholder="Ex: Espargo" /></div>
       {listaFreguesias && listaFreguesias.length > 0 ? (
         <div style={S.grid3}>
           <div style={S.field}><label style={S.label}>Distrito</label>
@@ -396,7 +400,8 @@ function TabProdutores({ produtores, polygonFeature, listaFreguesias }) {
 
   const filtered = produtores.filter(p => p.cpe.toLowerCase().includes(search.toLowerCase()) || p.nome.toLowerCase().includes(search.toLowerCase()));
   const pontosMapa = produtores.filter(p => p.lat && p.lon).map(p => ({ ...p, tipo: "produtor" }));
-  const foraLimite = polygonFeature ? produtores.filter(p => p.lat && p.lon && !pointInFeature(parseFloat(p.lat), parseFloat(p.lon), polygonFeature)).length : 0;
+  const limFrg = polygonFeature?.properties?.freguesia;
+  const foraLimite = limFrg ? produtores.filter(p => p.freguesia && p.freguesia !== limFrg).length : 0;
 
   return (
     <div>
@@ -430,7 +435,8 @@ function TabProdutores({ produtores, polygonFeature, listaFreguesias }) {
             <thead><tr><th style={S.th}>CPE</th><th style={S.th}>Nome</th><th style={S.th}>Localidade</th><th style={S.th}>Potência (kW)</th><th style={S.th}>Limite</th><th style={S.th}></th></tr></thead>
             <tbody>
               {filtered.map(p => {
-                const dentro = !polygonFeature || !p.lat || !p.lon || pointInFeature(parseFloat(p.lat), parseFloat(p.lon), polygonFeature);
+                const limFrg = polygonFeature?.properties?.freguesia;
+                const dentro = !limFrg || p.freguesia === limFrg;
                 return (
                   <tr key={p.id}>
                     <td style={S.td}><span style={S.badge("blue")}>{p.cpe}</span></td>
@@ -469,7 +475,8 @@ function TabBeneficiarios({ beneficiarios, polygonFeature, listaFreguesias }) {
 
   const filtered = beneficiarios.filter(b => b.cpe.toLowerCase().includes(search.toLowerCase()) || b.nome.toLowerCase().includes(search.toLowerCase()));
   const pontosMapa = beneficiarios.filter(b => b.lat && b.lon).map(b => ({ ...b, tipo: "beneficiario" }));
-  const foraLimite = polygonFeature ? beneficiarios.filter(b => b.lat && b.lon && !pointInFeature(parseFloat(b.lat), parseFloat(b.lon), polygonFeature)).length : 0;
+  const limFrgB = polygonFeature?.properties?.freguesia;
+  const foraLimite = limFrgB ? beneficiarios.filter(b => b.freguesia && b.freguesia !== limFrgB).length : 0;
 
   return (
     <div>
@@ -503,7 +510,8 @@ function TabBeneficiarios({ beneficiarios, polygonFeature, listaFreguesias }) {
             <thead><tr><th style={S.th}>CPE</th><th style={S.th}>Nome</th><th style={S.th}>Localidade</th><th style={S.th}>Agregado</th><th style={S.th}>Limite</th><th style={S.th}></th></tr></thead>
             <tbody>
               {filtered.map(b => {
-                const dentro = !polygonFeature || !b.lat || !b.lon || pointInFeature(parseFloat(b.lat), parseFloat(b.lon), polygonFeature);
+                const limFrg = polygonFeature?.properties?.freguesia;
+                const dentro = !limFrg || b.freguesia === limFrg;
                 return (
                   <tr key={b.id}>
                     <td style={S.td}><span style={S.badge("green")}>{b.cpe}</span></td>
@@ -740,14 +748,12 @@ function executarRedistribuicao(produtores, beneficiarios, config, kwDisponivel,
   // Filtrar por freguesia selecionada E por polígono geográfico
   const limiteFreguesia = polygonFeature?.properties?.freguesia;
   const produtoresValidos = produtores.filter(p => {
-    if (limiteFreguesia && p.freguesia && p.freguesia !== limiteFreguesia) return false;
-    if (!p.lat || !p.lon) return false;
-    return pointInFeature(parseFloat(p.lat), parseFloat(p.lon), polygonFeature);
+    if (!limiteFreguesia) return p.lat && p.lon;
+    return p.freguesia === limiteFreguesia && p.lat && p.lon;
   });
   const beneficiariosValidos = beneficiarios.filter(b => {
-    if (limiteFreguesia && b.freguesia && b.freguesia !== limiteFreguesia) return false;
-    if (!b.lat || !b.lon) return false;
-    return pointInFeature(parseFloat(b.lat), parseFloat(b.lon), polygonFeature);
+    if (!limiteFreguesia) return b.lat && b.lon;
+    return b.freguesia === limiteFreguesia && b.lat && b.lon;
   });
 
   beneficiariosValidos.forEach(b => { direito[b.id] = (b.membros?.length || 1) * kwPorMembro; recebido[b.id] = 0; });
@@ -880,7 +886,8 @@ function TabRedistribuicao({ produtores, beneficiarios, config, polygonFeature }
             <thead><tr><th style={S.th}>CPE</th><th style={S.th}>Nome</th><th style={S.th}>Limite</th><th style={S.th}>kW disponíveis</th></tr></thead>
             <tbody>
               {produtores.map(p => {
-                const dentro = !polygonFeature || !p.lat || !p.lon || pointInFeature(parseFloat(p.lat), parseFloat(p.lon), polygonFeature);
+                const limFrg = polygonFeature?.properties?.freguesia;
+                const dentro = !limFrg || p.freguesia === limFrg;
                 return (
                   <tr key={p.id} style={{ opacity: dentro ? 1 : 0.5 }}>
                     <td style={S.td}><span style={S.badge("orange")}>{p.cpe}</span></td>
