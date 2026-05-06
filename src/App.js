@@ -612,7 +612,7 @@ function TabConfiguracoes({ config, produtores, beneficiarios, polygonFeature, s
   const [selMunicipio, setSelMunicipio] = useState(config.limiteMunicipio || "");
   const [selFreguesia, setSelFreguesia] = useState(config.limiteFreguesia || "");
 
-  useEffect(() => setLocal(config), [config]);
+  // Inicializar local apenas uma vez com o config inicial
 
   const set = k => e => setLocal(p => ({ ...p, [k]: e.target.value }));
   const setRaio = (prodId, val) => setLocal(p => ({ ...p, raiosProdutores: { ...(p.raiosProdutores || {}), [prodId]: val } }));
