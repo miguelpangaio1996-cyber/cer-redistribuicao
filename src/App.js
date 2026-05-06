@@ -1390,7 +1390,7 @@ export default function App() {
       onSnapshot(collection(db, "beneficiarios"), snap => setBeneficiarios(snap.docs.map(d => d.data()))),
       onSnapshot(collection(db, "relatorios"), snap => setRelatorios(snap.docs.map(d => d.data()))),
     ];
-    getDoc(doc(db, "config", "global")).then(d => { if (d.exists()) setConfig(d.data()); });
+    onSnapshot(doc(db, "config", "global"), d => { if (d.exists()) setConfig(d.data()); });
     getDoc(doc(db, "config", "poligono")).then(d => {
       if (d.exists() && d.data().feature) {
         try { setPolygonFeature(JSON.parse(d.data().feature)); } catch {}
