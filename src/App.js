@@ -151,9 +151,10 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
     }
 
     pontos.forEach(p => {
-      const lat = parseFloat(String(p.lat).replace(",", "."));
-      const lon = parseFloat(String(p.lon).replace(",", "."));
-      if (isNaN(lat) || isNaN(lon)) return;
+      const lat = parseFloat(String(p.lat).replace(",", ".").trim());
+      const lon = parseFloat(String(p.lon).replace(",", ".").trim());
+      if (isNaN(lat) || isNaN(lon) || lat === 0 || lon === 0) return;
+      console.log("Pin:", p.nome, lat, lon);
       bounds.push([lat, lon]);
 
       const frg = p.freguesia;
@@ -254,7 +255,6 @@ function FormProdutor({ initial, onSave, onCancel, polygonFeature, listaFreguesi
           <div style={S.field}><label style={S.label}>Lon.</label><input style={S.input} type="number" value={f.lon} onChange={set("lon")} placeholder="-9.1..." /></div>
         </div>
       </div>
-      <div style={S.field}><label style={S.label}>Localidade</label><input style={S.input} value={f.localidade || ""} onChange={set("localidade")} placeholder="Ex: Espargo" /></div>
       {listaFreguesias && listaFreguesias.length > 0 ? (
         <div style={S.grid3}>
           <div style={S.field}><label style={S.label}>Distrito</label>
@@ -279,6 +279,7 @@ function FormProdutor({ initial, onSave, onCancel, polygonFeature, listaFreguesi
       ) : (
         <div style={S.field}><label style={S.label}>Localidade</label><input style={S.input} value={f.localidade} onChange={set("localidade")} /></div>
       )}
+      <div style={S.field}><label style={S.label}>Localidade / Lugar</label><input style={S.input} value={f.localidade || ""} onChange={set("localidade")} placeholder="Ex: Espargo (opcional)" /></div>
       {limiteFreguesia && f.freguesia && !matchLimite && (
         <div style={S.alert("warn")}>⚠ Este produtor está na freguesia <b>{f.freguesia}</b>, diferente do limite ativo (<b>{limiteFreguesia}</b>). Não participará na redistribuição.</div>
       )}
@@ -330,7 +331,6 @@ function FormBeneficiario({ initial, onSave, onCancel, polygonFeature, listaFreg
         </div>
       </div>
       <div style={S.field}><label style={S.label}>Morada</label><input style={S.input} value={f.morada} onChange={set("morada")} /></div>
-      <div style={S.field}><label style={S.label}>Localidade</label><input style={S.input} value={f.localidade || ""} onChange={set("localidade")} placeholder="Ex: Espargo" /></div>
       {listaFreguesias && listaFreguesias.length > 0 ? (
         <div style={S.grid3}>
           <div style={S.field}><label style={S.label}>Distrito</label>
@@ -361,6 +361,7 @@ function FormBeneficiario({ initial, onSave, onCancel, polygonFeature, listaFreg
       {limiteFreguesia && f.freguesia && matchLimite && (
         <div style={S.alert("ok")}>✓ Freguesia dentro do limite ativo.</div>
       )}
+      <div style={S.field}><label style={S.label}>Localidade / Lugar</label><input style={S.input} value={f.localidade || ""} onChange={set("localidade")} placeholder="Ex: Espargo (opcional)" /></div>
       <div style={{ marginTop: 8 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <div style={{ fontSize: 13, color: "#2d6a4f", fontWeight: 700 }}>Agregado Familiar *</div>
@@ -442,7 +443,7 @@ function TabProdutores({ produtores, polygonFeature, listaFreguesias }) {
         <div style={S.cardTitle}>Produtores Registados ({filtered.length})</div>
         {filtered.length === 0 ? <div style={S.empty}>☀ Nenhum produtor registado</div> : (
           <table style={S.table}>
-            <thead><tr><th style={S.th}>CPE</th><th style={S.th}>Nome</th><th style={S.th}>Localidade</th><th style={S.th}>Potência (kW)</th><th style={S.th}>Limite</th><th style={S.th}></th></tr></thead>
+            <thead><tr><th style={S.th}>CPE</th><th style={S.th}>Nome</th><th style={S.th}>Freguesia</th><th style={S.th}>Potência (kW)</th><th style={S.th}>Limite</th><th style={S.th}></th></tr></thead>
             <tbody>
               {filtered.map(p => {
                 const limFrg = polygonFeature?.properties?.freguesia;
@@ -451,7 +452,7 @@ function TabProdutores({ produtores, polygonFeature, listaFreguesias }) {
                   <tr key={p.id}>
                     <td style={S.td}><span style={S.badge("blue")}>{p.cpe}</span></td>
                     <td style={S.td}>{p.nome}</td>
-                    <td style={S.td}>{p.freguesia || p.localidade || "—"}</td>
+                    <td style={S.td}>{p.freguesia || "—"}</td>
                     <td style={S.td}>{p.potencia || "—"}</td>
                     <td style={S.td}>{polygonFeature ? <span style={S.badge(dentro ? "green" : "red")}>{dentro ? "✓ Dentro" : "✗ Fora"}</span> : <span style={{ color: "#b7ddd0", fontSize: 11 }}>—</span>}</td>
                     <td style={S.td}>
@@ -517,7 +518,7 @@ function TabBeneficiarios({ beneficiarios, polygonFeature, listaFreguesias }) {
         <div style={S.cardTitle}>Beneficiários Registados ({filtered.length})</div>
         {filtered.length === 0 ? <div style={S.empty}>⚡ Nenhum beneficiário registado</div> : (
           <table style={S.table}>
-            <thead><tr><th style={S.th}>CPE</th><th style={S.th}>Nome</th><th style={S.th}>Localidade</th><th style={S.th}>Agregado</th><th style={S.th}>Limite</th><th style={S.th}></th></tr></thead>
+            <thead><tr><th style={S.th}>CPE</th><th style={S.th}>Nome</th><th style={S.th}>Freguesia</th><th style={S.th}>Agregado</th><th style={S.th}>Limite</th><th style={S.th}></th></tr></thead>
             <tbody>
               {filtered.map(b => {
                 const limFrg = polygonFeature?.properties?.freguesia;
@@ -526,7 +527,7 @@ function TabBeneficiarios({ beneficiarios, polygonFeature, listaFreguesias }) {
                   <tr key={b.id}>
                     <td style={S.td}><span style={S.badge("green")}>{b.cpe}</span></td>
                     <td style={S.td}>{b.nome}</td>
-                    <td style={S.td}>{b.localidade || "—"}</td>
+                    <td style={S.td}>{b.freguesia || "—"}</td>
                     <td style={S.td}>{b.membros?.length || 0} membro(s)</td>
                     <td style={S.td}>{polygonFeature ? <span style={S.badge(dentro ? "green" : "red")}>{dentro ? "✓ Dentro" : "✗ Fora"}</span> : <span style={{ color: "#b7ddd0", fontSize: 11 }}>—</span>}</td>
                     <td style={S.td}>
