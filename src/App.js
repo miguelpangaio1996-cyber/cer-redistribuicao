@@ -1549,6 +1549,23 @@ function TabSimulador({ produtores, beneficiarios, config, polygonFeature }) {
             <button style={S.btn("ghost")} onClick={limpar}>Limpar</button>
           </div>
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", background: "#f0faf5", borderRadius: 8, marginBottom: 16, border: "1px solid #c8e6d8" }}>
+          <div style={{ fontSize: 12, color: "#2d6a4f", fontWeight: 600, whiteSpace: "nowrap" }}>Aplicar a todos:</div>
+          <input
+            style={{ ...S.input, width: 120 }}
+            type="number"
+            placeholder="kW para simular"
+            id="kwGlobal"
+          />
+          <button style={S.btn("primary")} onClick={() => {
+            const val = document.getElementById("kwGlobal").value;
+            if (!val) return;
+            const kw = {};
+            produtoresValidos.forEach(p => { kw[p.id] = val; });
+            setKwSim(kw);
+          }}>Aplicar</button>
+          <div style={{ fontSize: 11, color: "#7a9e8e", fontStyle: "italic" }}>Podes ajustar cada produtor individualmente depois</div>
+        </div>
         {produtoresValidos.length === 0 ? <div style={S.empty}>Sem produtores elegíveis</div> : (
           <table style={S.table}>
             <thead><tr><th style={S.th}>CPE</th><th style={S.th}>Nome</th><th style={S.th}>Pot. Instalada</th><th style={S.th}>kW para simular</th></tr></thead>
