@@ -117,10 +117,10 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
     if (!window.L) {
       const script = document.createElement("script");
       script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
-      script.onload = () => setTimeout(initMap, 100);
+      script.onload = () => setTimeout(initMap, 300);
       document.head.appendChild(script);
     } else {
-      setTimeout(initMap, 100);
+      setTimeout(initMap, 300);
     }
 
     return () => {
@@ -129,9 +129,17 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
   }, []);
 
   useEffect(() => {
-    const L = window.L;
-    const map = mapInstanceRef.current;
-    if (!L || !map || !mapapronto) return;
+    if (!mapapronto) return;
+    const timer = setTimeout(() => {
+      const L = window.L;
+      const map = mapInstanceRef.current;
+      if (!L || !map) return;
+      addPins(L, map);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [pontos, mostrarRaios, config, polygonFeature, mapapronto]);
+
+  const addPins = (L, map) => {
 
     layersRef.current.forEach(l => map.removeLayer(l));
     layersRef.current = [];
@@ -195,7 +203,7 @@ function LeafletMap({ pontos, mostrarRaios, config, polygonFeature }) {
     } else {
       map.setView([39.7, -8.0], 8);
     }
-  }, [pontos, mostrarRaios, config, polygonFeature, mapapronto]);
+  };
 
   return (
     <div style={{ borderRadius: 10, overflow: "hidden", border: "1px solid #d8ede6" }}>
