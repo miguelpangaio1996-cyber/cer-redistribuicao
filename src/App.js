@@ -1237,7 +1237,7 @@ function TabSobre() {
       <div style={S.card}>
         <div style={sectionTitle}>⚡ O Problema: Pobreza Energética</div>
         <p style={paragraph}>
-          A Pobreza Energética afeta milhões de famílias em Portugal e na Europa. Trata-se da incapacidade de um agregado familiar assegurar serviços energéticos essenciais — aquecimento, arrefecimento, iluminação e utilização de equipamentos elétricos — em condições adequadas e a custos comportáveis. Em Portugal, cerca de 20,8% da população foi incapaz de manter a sua habitação adequadamente aquecida em 2023, quase o dobro da média europeia.
+          A Pobreza Energética afeta milhões de famílias em Portugal e na Europa. Trata-se da incapacidade de um agregado familiar assegurar serviços energéticos essenciais, aquecimento, arrefecimento, iluminação e utilização de equipamentos elétricos em condições adequadas e a custos comportáveis. Em Portugal, cerca de 20,8% da população foi incapaz de manter a sua habitação adequadamente aquecida em 2023, quase o dobro da média europeia.
         </p>
         <p style={paragraph}>
           Simultaneamente, milhares de instalações fotovoltaicas residenciais produzem excedentes de energia que são injetados na rede elétrica. Segundo a ERSE (2024), 57% deste excedente é entregue à rede sem qualquer valorização económica para o produtor. Existe, portanto, um paradoxo: energia renovável desperdiçada enquanto famílias vizinhas não conseguem pagar as suas faturas.
@@ -1346,7 +1346,7 @@ function TabSobre() {
       <div style={S.card}>
         <div style={sectionTitle}>🚀 Potencial e Visão Futura</div>
         <p style={paragraph}>
-          Na área de estudo (União de Freguesias de Santa Maria da Feira, Travanca, Sanfins e Espargo) foram identificadas 532 UPAC com 11.185 painéis fotovoltaicos e uma potência instalada estimada de 4.474 kW, validados por cruzamento com dados da E-Redes (460 UPAC registadas). O excedente solidário disponível foi estimado entre 892.563 e 1.204.960 kWh/ano, permitindo apoiar entre 789 e 963 famílias em situação de Pobreza Energética — uma cobertura de 62% a 76%. A projeção nacional estima um potencial de 264.249 famílias apoiáveis (37% de cobertura). O modelo é replicável a qualquer freguesia ou município de Portugal, bastando carregar o GeoJSON da região e registar os participantes.
+          Na área de estudo (União de Freguesias de Santa Maria da Feira, Travanca, Sanfins e Espargo) foram identificadas 532 UPAC com 11.185 painéis fotovoltaicos e uma potência instalada estimada de 4.474 kW, validados por cruzamento com dados da E-Redes (460 UPAC registadas). O excedente solidário disponível foi estimado entre 892.563 e 1.204.960 kWh/ano, permitindo apoiar entre 789 e 963 famílias em situação de Pobreza Energética, uma cobertura de 62% a 76%. A projeção nacional estima um potencial de 264.249 famílias apoiáveis (37% de cobertura). O modelo é replicável a qualquer freguesia ou município de Portugal, bastando carregar o GeoJSON da região e registar os participantes.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
           <div style={{ ...highlight, textAlign: "center" }}>
