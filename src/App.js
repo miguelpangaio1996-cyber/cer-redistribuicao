@@ -705,7 +705,7 @@ function TabConfiguracoes({ config, produtores, beneficiarios, polygonFeature, s
     <div>
       {/* Limite Geográfico */}
       <div style={S.card}>
-        <div style={S.cardTitle}>🗺 Limite Geográfico — Freguesia</div>
+        <div style={S.cardTitle}>🗺 Limite Geográfico - Freguesia</div>
         <div style={{ marginBottom: 16 }}>
           <label style={{ ...S.label, display: "block", marginBottom: 8 }}>1. Carregar ficheiro de freguesias (cont_freguesias.json)</label>
           <input type="file" accept=".json,.geojson" onChange={handleGeoUpload} style={{ color: "#3d5a4e", fontSize: 13 }} />
@@ -745,7 +745,7 @@ function TabConfiguracoes({ config, produtores, beneficiarios, polygonFeature, s
           </div>
         )}
         {!geoData && polygonFeature && (
-          <div style={S.alert("ok")}>✓ Limite ativo: <b>{config.limiteFreguesia}</b>, {config.limiteMunicipio} — carrega o ficheiro novamente para alterar.</div>
+          <div style={S.alert("ok")}>✓ Limite ativo: <b>{config.limiteFreguesia}</b>, {config.limiteMunicipio} - carrega o ficheiro novamente para alterar.</div>
         )}
         {!geoData && !polygonFeature && (
           <div style={S.alert("info")}>Sem limite geográfico definido — todos os produtores e beneficiários são elegíveis.</div>
@@ -1229,7 +1229,7 @@ function TabSobre() {
           Plataforma de gestão para Comunidades de Energia Renovável (CER)
         </div>
         <div style={{ fontSize: 12, opacity: 0.75, lineHeight: 1.6 }}>
-          Desenvolvido no âmbito de tese de Engenharia de Produção Industrial — redistribuição de excedente fotovoltaico a famílias em situação de vulnerabilidade energética.
+          Desenvolvido no âmbito do Projeto Final de Engenharia de Produção Industrial - redistribuição de excedente fotovoltaico a famílias em situação de vulnerabilidade energética.
         </div>
       </div>
 
@@ -1237,7 +1237,7 @@ function TabSobre() {
       <div style={S.card}>
         <div style={sectionTitle}>⚡ O Problema: Escassez Energética</div>
         <p style={paragraph}>
-          A escassez energética afeta milhões de famílias em Portugal e na Europa. Trata-se da incapacidade de uma família assegurar os serviços energéticos essenciais — aquecimento, arrefecimento, iluminação e eletrodomésticos básicos — a um custo comportável. Em Portugal, estima-se que uma parcela significativa da população vive em situação de pobreza energética, com impactos diretos na saúde, bem-estar e qualidade de vida.
+          A escassez energética afeta milhões de famílias em Portugal e na Europa. Trata-se da incapacidade de uma família assegurar os serviços energéticos essenciais, aquecimento, arrefecimento, iluminação e eletrodomésticos básicos, a um custo comportável. Em Portugal, estima-se que uma parcela significativa da população vive em situação de pobreza energética, com impactos diretos na saúde, bem-estar e qualidade de vida.
         </p>
         <p style={paragraph}>
           Simultaneamente, milhares de instalações fotovoltaicas residenciais produzem excedentes de energia que são injetados na rede elétrica a custo zero ou a valores residuais, sem qualquer benefício direto para a comunidade local. Existe, portanto, um paradoxo: energia renovável desperdiçada enquanto famílias vizinhas não conseguem pagar as suas faturas.
@@ -1317,7 +1317,7 @@ function TabSobre() {
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Triangulação Geográfica</div>
               <p style={{ ...paragraph, marginBottom: 0 }}>
-                A redistribuição usa triangulação por coordenadas GPS com raios configuráveis (tipicamente 2–4 km) para cruzar produtores e beneficiários. Apenas beneficiários dentro do raio de ação de um produtor — e dentro do limite da freguesia — são elegíveis para receber energia desse produtor.
+                A redistribuição usa triangulação por coordenadas GPS com raios configuráveis (tipicamente 2–4 km) para cruzar produtores e beneficiários. Apenas beneficiários dentro do raio de ação de um produtor e dentro do limite da freguesia — são elegíveis para receber energia desse produtor.
               </p>
             </div>
           </div>
@@ -1374,7 +1374,7 @@ function TabSobre() {
           <div style={{ padding: "16px 20px", background: "#f8fdfb", borderRadius: 10, border: "1px solid #d8ede6" }}>
             <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Contexto Académico</div>
             <div style={{ fontSize: 13, color: "#3d5a4e", lineHeight: 1.6 }}>
-              Tese de Engenharia de Produção Industrial — deteção de painéis solares com YOLO/QGIS e redistribuição de excedente fotovoltaico via IPSS.
+              Projeto Final da Licenciatura de Engenharia de Produção Industrial . deteção de painéis solares com YOLO/QGIS e redistribuição de excedente fotovoltaico via IPSS.
             </div>
           </div>
           <div style={{ padding: "16px 20px", background: "#f8fdfb", borderRadius: 10, border: "1px solid #d8ede6" }}>
@@ -1415,7 +1415,7 @@ function TabRelatorios({ relatorios }) {
   return (
     <div>
       {selecionado && (
-        <Modal title={`Relatório — ${selecionado.periodo}`} onClose={() => setSelecionado(null)}>
+        <Modal title={`Relatório - ${selecionado.periodo}`} onClose={() => setSelecionado(null)}>
           <div style={{ marginBottom: 16, display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             <button style={S.btn("green")} onClick={() => exportarExcel(selecionado)}>⬇ Exportar Excel</button>
             <button style={S.btn("primary")} onClick={() => gerarPDF(selecionado)}>📄 Gerar PDF</button>
@@ -1805,7 +1805,7 @@ function TabSimulador({ produtores, beneficiarios, config, polygonFeature }) {
     <div>
       {/* Aviso simulador */}
       <div style={{ ...S.alert("info"), marginBottom: 20 }}>
-        🧪 <b>Modo Simulação</b> — Os resultados aqui não são guardados nem afetam os dados reais. Experimenta diferentes cenários antes de executar a redistribuição oficial.
+        🧪 <b>Modo Simulação</b> - Os resultados aqui não são guardados nem afetam os dados reais. Experimenta diferentes cenários antes de executar a redistribuição oficial.
       </div>
 
       {/* Parâmetros de simulação */}
