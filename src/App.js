@@ -2010,7 +2010,7 @@ function LoginScreen({ onLogin, onGuestLogin, erro, loading }) {
           <div style={{ flex: 1, height: 1, background: "#d8ede6" }} />
         </div>
 
-        {/* Acesso de Avaliação */}
+        {/* Acesso de Convidado */}
         <button
           onClick={() => setShowGuest(!showGuest)}
           style={{
@@ -2025,7 +2025,7 @@ function LoginScreen({ onLogin, onGuestLogin, erro, loading }) {
         {showGuest && (
           <div style={{ marginTop: 16, padding: "20px", background: "#f8fdfb", borderRadius: 12, border: "1px solid #d8ede6", textAlign: "left" }}>
             <div style={{ fontSize: 12, color: "#7a9e8e", marginBottom: 12, lineHeight: 1.5 }}>
-              Acesso destinado ao júri de avaliação. Introduza o código fornecido pelo autor do projeto.
+              Acesso destinado a convidados. Introduza o código fornecido pelo autor do projeto.
             </div>
             <input
               type="password"
@@ -2040,7 +2040,7 @@ function LoginScreen({ onLogin, onGuestLogin, erro, loading }) {
               disabled={loading || !guestCode.trim()}
               style={{ ...S.btn("primary"), width: "100%", opacity: (!guestCode.trim() || loading) ? 0.5 : 1 }}
             >
-              {loading ? "A verificar..." : "Entrar como Avaliador"}
+              {loading ? "A verificar..." : "Entrar como Convidado"}
             </button>
           </div>
         )}
@@ -2262,8 +2262,8 @@ export default function App() {
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.95)", fontWeight: 600 }}>{isGuest ? "🎓 Avaliador" : user.displayName}</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>{isGuest ? "Acesso de avaliação" : user.email}</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.95)", fontWeight: 600 }}>{isGuest ? "🎓 Convidado" : user.displayName}</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>{isGuest ? "Acesso de Convidado" : user.email}</div>
           </div>
           {!isGuest && user.photoURL && <img src={user.photoURL} alt="" style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)" }} />}
           <button onClick={handleLogout} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }} title="Terminar sessão">
