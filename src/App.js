@@ -1240,7 +1240,7 @@ function TabSobre() {
           A Pobreza Energética afeta milhões de famílias em Portugal e na Europa. Trata-se da incapacidade de um agregado familiar assegurar serviços energéticos essenciais — aquecimento, arrefecimento, iluminação e utilização de equipamentos elétricos — em condições adequadas e a custos comportáveis. Em Portugal, cerca de 20,8% da população foi incapaz de manter a sua habitação adequadamente aquecida em 2023, quase o dobro da média europeia.
         </p>
         <p style={paragraph}>
-          Simultaneamente, milhares de instalações fotovoltaicas residenciais produzem excedentes de energia que são injetados na rede elétrica a custo zero ou a valores residuais, sem qualquer benefício direto para a comunidade local. Existe, portanto, um paradoxo: energia renovável desperdiçada enquanto famílias vizinhas não conseguem pagar as suas faturas.
+          Simultaneamente, milhares de instalações fotovoltaicas residenciais produzem excedentes de energia que são injetados na rede elétrica. Segundo a ERSE (2024), 57% deste excedente é entregue à rede sem qualquer valorização económica para o produtor. Existe, portanto, um paradoxo: energia renovável desperdiçada enquanto famílias vizinhas não conseguem pagar as suas faturas.
         </p>
       </div>
 
@@ -1346,7 +1346,7 @@ function TabSobre() {
       <div style={S.card}>
         <div style={sectionTitle}>🚀 Potencial e Visão Futura</div>
         <p style={paragraph}>
-          Esta plataforma demonstra que é tecnicamente viável redistribuir excedentes fotovoltaicos a nível local, com transparência e rastreabilidade total. O modelo é replicável a qualquer freguesia ou município de Portugal, bastando carregar o GeoJSON da região e registar os participantes.
+          Na área de estudo (União de Freguesias de Santa Maria da Feira, Travanca, Sanfins e Espargo) foram identificadas 532 UPAC com 11.185 painéis fotovoltaicos e uma potência instalada estimada de 4.474 kW, validados por cruzamento com dados da E-Redes (460 UPAC registadas). O excedente solidário disponível foi estimado entre 892.563 e 1.204.960 kWh/ano, permitindo apoiar entre 789 e 963 famílias em situação de Pobreza Energética — uma cobertura de 62% a 76%. A projeção nacional estima um potencial de 264.249 famílias apoiáveis (37% de cobertura). O modelo é replicável a qualquer freguesia ou município de Portugal, bastando carregar o GeoJSON da região e registar os participantes.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
           <div style={{ ...highlight, textAlign: "center" }}>
@@ -1374,13 +1374,13 @@ function TabSobre() {
           <div style={{ padding: "16px 20px", background: "#f8fdfb", borderRadius: 10, border: "1px solid #d8ede6" }}>
             <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Contexto Académico</div>
             <div style={{ fontSize: 13, color: "#3d5a4e", lineHeight: 1.6 }}>
-              Projeto Final da Licenciatura de Engenharia de Produção Industrial . deteção de painéis solares com RF-DETR/QGIS e redistribuição de excedente fotovoltaico via IPSS.
-            </div>
+              Projeto Final da Licenciatura de Engenharia de Produção Industrial . ISVOUGA . Caso de estudo: União de Freguesias de Santa Maria da Feira, Travanca, Sanfins e Espargo.
+            </div>  
           </div>
           <div style={{ padding: "16px 20px", background: "#f8fdfb", borderRadius: 10, border: "1px solid #d8ede6" }}>
             <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Tecnologias</div>
             <div style={{ fontSize: 13, color: "#3d5a4e", lineHeight: 1.6 }}>
-              React · Firebase Firestore · Leaflet · RF-DETR (deteção) · QGIS (SIG) · Haversine (distâncias) · Excel (I/O)
+              React · Firebase Firestore · Leaflet · RF-DETR (deteção) · QGIS (SIG) · Haversine (distâncias) · Excel (I/O) · INE Censos 2021 · E-Redes Open Data · ERSE
             </div>
           </div>
         </div>
