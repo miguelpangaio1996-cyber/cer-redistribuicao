@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 import { initializeApp } from "firebase/app";
 import { getFirestore, collection, doc, setDoc, deleteDoc, onSnapshot, getDoc } from "firebase/firestore";
-import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
+import { getAuth, signInWithPopup, signInAnonymously, GoogleAuthProvider, onAuthStateChanged, signOut } from "firebase/auth";
 
 // ─── Firebase Config ──────────────────────────────────────────────────────────
 const firebaseConfig = {
@@ -1967,7 +1967,10 @@ const TABS = ["Dashboard", "Produtores", "Beneficiários", "Configurações", "R
 const DEFAULT_CONFIG = { kwPorMembro: 50, raioPadrao: 3, raiosProdutores: {}, metodoRedistribuicao: "proporcional" };
 
 // ─── Ecrã de Login ───────────────────────────────────────────────────────────
-function LoginScreen({ onLogin, erro, loading }) {
+function LoginScreen({ onLogin, onGuestLogin, erro, loading }) {
+  const [showGuest, setShowGuest] = useState(false);
+  const [guestCode, setGuestCode] = useState("");
+
   return (
     <div style={{ ...S.app, alignItems: "center", justifyContent: "center", gap: 24 }}>
       <div style={{ background: "#ffffff", borderRadius: 20, padding: "48px 40px", textAlign: "center", boxShadow: "0 8px 32px rgba(45,106,79,0.12)", border: "1px solid #d8ede6", maxWidth: 420, width: "90%" }}>
@@ -1999,6 +2002,48 @@ function LoginScreen({ onLogin, erro, loading }) {
           </svg>
           {loading ? "A autenticar..." : "Entrar com Google"}
         </button>
+
+        {/* Separador */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "24px 0" }}>
+          <div style={{ flex: 1, height: 1, background: "#d8ede6" }} />
+          <div style={{ fontSize: 11, color: "#b7ddd0", fontWeight: 600 }}>ou</div>
+          <div style={{ flex: 1, height: 1, background: "#d8ede6" }} />
+        </div>
+
+        {/* Acesso de Avaliação */}
+        <button
+          onClick={() => setShowGuest(!showGuest)}
+          style={{
+            width: "100%", padding: "12px 24px", borderRadius: 10, border: "1px solid #d8ede6",
+            background: "#f8fdfb", cursor: "pointer", fontSize: 13, fontWeight: 600,
+            color: "#7a9e8e", fontFamily: "inherit", transition: "all 0.2s",
+          }}
+        >
+          🎓 Acesso de Avaliação {showGuest ? "▲" : "▼"}
+        </button>
+
+        {showGuest && (
+          <div style={{ marginTop: 16, padding: "20px", background: "#f8fdfb", borderRadius: 12, border: "1px solid #d8ede6", textAlign: "left" }}>
+            <div style={{ fontSize: 12, color: "#7a9e8e", marginBottom: 12, lineHeight: 1.5 }}>
+              Acesso destinado ao júri de avaliação. Introduza o código fornecido pelo autor do projeto.
+            </div>
+            <input
+              type="password"
+              placeholder="Código de acesso"
+              value={guestCode}
+              onChange={e => setGuestCode(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && guestCode.trim()) onGuestLogin(guestCode.trim()); }}
+              style={{ ...S.input, width: "100%", marginBottom: 12, boxSizing: "border-box" }}
+            />
+            <button
+              onClick={() => { if (guestCode.trim()) onGuestLogin(guestCode.trim()); }}
+              disabled={loading || !guestCode.trim()}
+              style={{ ...S.btn("primary"), width: "100%", opacity: (!guestCode.trim() || loading) ? 0.5 : 1 }}
+            >
+              {loading ? "A verificar..." : "Entrar como Avaliador"}
+            </button>
+          </div>
+        )}
 
         <div style={{ fontSize: 11, color: "#b7ddd0", marginTop: 20, lineHeight: 1.5 }}>
           Acesso restrito a utilizadores autorizados.
@@ -2033,6 +2078,7 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authErro, setAuthErro] = useState("");
   const [autorizado, setAutorizado] = useState(null); // null = a verificar, true/false
+  const [isGuest, setIsGuest] = useState(false);
 
   // ── App state ──
   const [tab, setTab] = useState(0);
@@ -2049,7 +2095,7 @@ export default function App() {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setAuthLoading(false);
-      if (!u) { setAutorizado(null); setAuthErro(""); }
+      if (!u) { setAutorizado(null); setAuthErro(""); setIsGuest(false); }
     });
     return unsub;
   }, []);
@@ -2057,23 +2103,23 @@ export default function App() {
   // ── Verificar se email está autorizado ──
   useEffect(() => {
     if (!user) return;
+    if (isGuest) { setAutorizado(true); return; }
     setAutorizado(null);
     getDoc(doc(db, "config", "autorizados")).then(d => {
       if (d.exists()) {
         const emails = d.data().emails || [];
-        setAutorizado(emails.includes(user.email.toLowerCase()));
+        setAutorizado(user.email ? emails.includes(user.email.toLowerCase()) : false);
       } else {
-        // Se o documento não existir, cria-o com o primeiro email
         const emailsIniciais = ["miguelpangaio1996@gmail.com"];
         setDoc(doc(db, "config", "autorizados"), { emails: emailsIniciais }).then(() => {
-          setAutorizado(emailsIniciais.includes(user.email.toLowerCase()));
+          setAutorizado(user.email ? emailsIniciais.includes(user.email.toLowerCase()) : false);
         });
       }
     }).catch(e => {
       console.error("Erro ao verificar autorização:", e);
       setAutorizado(false);
     });
-  }, [user]);
+  }, [user, isGuest]);
 
   // ── Login com Google ──
   const handleLogin = async () => {
@@ -2094,11 +2140,39 @@ export default function App() {
     setAuthLoading(false);
   };
 
+  // ── Login como convidado (avaliação) ──
+  const handleGuestLogin = async (codigo) => {
+    setAuthErro("");
+    setAuthLoading(true);
+    try {
+      const d = await getDoc(doc(db, "config", "autorizados"));
+      const codigoCorreto = d.exists() ? (d.data().codigoAvaliacao || "") : "";
+      if (!codigoCorreto) {
+        setAuthErro("O acesso de avaliação não está ativo de momento.");
+        setAuthLoading(false);
+        return;
+      }
+      if (codigo !== codigoCorreto) {
+        setAuthErro("Código de acesso incorreto.");
+        setAuthLoading(false);
+        return;
+      }
+      setIsGuest(true);
+      await signInAnonymously(auth);
+    } catch (e) {
+      console.error("Erro no login de convidado:", e);
+      setAuthErro("Erro ao autenticar. Tenta novamente.");
+      setIsGuest(false);
+    }
+    setAuthLoading(false);
+  };
+
   const handleLogout = async () => {
     await signOut(auth);
     setUser(null);
     setAutorizado(null);
     setAuthErro("");
+    setIsGuest(false);
   };
 
   // ── Carregar dados do Firebase (só quando autorizado) ──
@@ -2142,7 +2216,7 @@ export default function App() {
   );
 
   // ── Sem login ──
-  if (!user) return <LoginScreen onLogin={handleLogin} erro={authErro} loading={authLoading} />;
+  if (!user) return <LoginScreen onLogin={handleLogin} onGuestLogin={handleGuestLogin} erro={authErro} loading={authLoading} />;
 
   // ── A verificar autorização ──
   if (autorizado === null) return (
@@ -2176,10 +2250,10 @@ export default function App() {
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 14 }}>
           <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.95)", fontWeight: 600 }}>{user.displayName}</div>
-            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>{user.email}</div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.95)", fontWeight: 600 }}>{isGuest ? "🎓 Avaliador" : user.displayName}</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>{isGuest ? "Acesso de avaliação" : user.email}</div>
           </div>
-          {user.photoURL && <img src={user.photoURL} alt="" style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)" }} />}
+          {!isGuest && user.photoURL && <img src={user.photoURL} alt="" style={{ width: 32, height: 32, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)" }} />}
           <button onClick={handleLogout} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "6px 14px", color: "#fff", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }} title="Terminar sessão">
             Sair
           </button>
