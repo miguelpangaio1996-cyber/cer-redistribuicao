@@ -2079,6 +2079,7 @@ export default function App() {
   const [authErro, setAuthErro] = useState("");
   const [autorizado, setAutorizado] = useState(null); // null = a verificar, true/false
   const [isGuest, setIsGuest] = useState(false);
+  const guestCheckRef = useRef(false);
 
   // ── App state ──
   const [tab, setTab] = useState(0);
@@ -2094,7 +2095,7 @@ export default function App() {
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
-      setAuthLoading(false);
+      if (!guestCheckRef.current) setAuthLoading(false);
       if (!u) { setAutorizado(null); setAuthErro(""); setIsGuest(false); }
     });
     return unsub;
@@ -2104,6 +2105,7 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     if (isGuest) { setAutorizado(true); return; }
+    if (guestCheckRef.current) return; // A aguardar verificação de código
     setAutorizado(null);
     getDoc(doc(db, "config", "autorizados")).then(d => {
       if (d.exists()) {
@@ -2144,23 +2146,33 @@ export default function App() {
   const handleGuestLogin = async (codigo) => {
     setAuthErro("");
     setAuthLoading(true);
+    guestCheckRef.current = true;
     try {
+      // Autenticar anonimamente primeiro (necessário para ler Firestore)
+      await signInAnonymously(auth);
+      // Agora sim, verificar o código
       const d = await getDoc(doc(db, "config", "autorizados"));
       const codigoCorreto = d.exists() ? (d.data().codigoAvaliacao || "") : "";
       if (!codigoCorreto) {
+        guestCheckRef.current = false;
+        await signOut(auth);
         setAuthErro("O acesso de avaliação não está ativo de momento.");
         setAuthLoading(false);
         return;
       }
       if (codigo !== codigoCorreto) {
+        guestCheckRef.current = false;
+        await signOut(auth);
         setAuthErro("Código de acesso incorreto.");
         setAuthLoading(false);
         return;
       }
+      // Código correto — marcar como guest
+      guestCheckRef.current = false;
       setIsGuest(true);
-      await signInAnonymously(auth);
     } catch (e) {
       console.error("Erro no login de convidado:", e);
+      guestCheckRef.current = false;
       setAuthErro("Erro ao autenticar. Tenta novamente.");
       setIsGuest(false);
     }
