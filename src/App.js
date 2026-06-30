@@ -2019,7 +2019,7 @@ function LoginScreen({ onLogin, onGuestLogin, erro, loading }) {
             color: "#7a9e8e", fontFamily: "inherit", transition: "all 0.2s",
           }}
         >
-          🎓 Acesso de Avaliação {showGuest ? "▲" : "▼"}
+          🎓 Acesso de Convidado {showGuest ? "▲" : "▼"}
         </button>
 
         {showGuest && (
@@ -2142,7 +2142,7 @@ export default function App() {
     setAuthLoading(false);
   };
 
-  // ── Login como convidado (avaliação) ──
+  // ── Login como convidado (Convidado) ──
   const handleGuestLogin = async (codigo) => {
     setAuthErro("");
     setAuthLoading(true);
@@ -2156,7 +2156,7 @@ export default function App() {
       if (!codigoCorreto) {
         guestCheckRef.current = false;
         await signOut(auth);
-        setAuthErro("O acesso de avaliação não está ativo de momento.");
+        setAuthErro("O Acesso de Convidado não está ativo de momento.");
         setAuthLoading(false);
         return;
       }
