@@ -1235,9 +1235,9 @@ function TabSobre() {
 
       {/* Escassez Energética */}
       <div style={S.card}>
-        <div style={sectionTitle}>⚡ O Problema: Escassez Energética</div>
+        <div style={sectionTitle}>⚡ O Problema: Pobreza Energética</div>
         <p style={paragraph}>
-          A escassez energética afeta milhões de famílias em Portugal e na Europa. Trata-se da incapacidade de uma família assegurar os serviços energéticos essenciais, aquecimento, arrefecimento, iluminação e eletrodomésticos básicos, a um custo comportável. Em Portugal, estima-se que uma parcela significativa da população vive em situação de pobreza energética, com impactos diretos na saúde, bem-estar e qualidade de vida.
+          A Pobreza Energética afeta milhões de famílias em Portugal e na Europa. Trata-se da incapacidade de um agregado familiar assegurar serviços energéticos essenciais — aquecimento, arrefecimento, iluminação e utilização de equipamentos elétricos — em condições adequadas e a custos comportáveis. Em Portugal, cerca de 20,8% da população foi incapaz de manter a sua habitação adequadamente aquecida em 2023, quase o dobro da média europeia.
         </p>
         <p style={paragraph}>
           Simultaneamente, milhares de instalações fotovoltaicas residenciais produzem excedentes de energia que são injetados na rede elétrica a custo zero ou a valores residuais, sem qualquer benefício direto para a comunidade local. Existe, portanto, um paradoxo: energia renovável desperdiçada enquanto famílias vizinhas não conseguem pagar as suas faturas.
@@ -1299,7 +1299,7 @@ function TabSobre() {
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Deteção de Painéis Solares</div>
               <p style={{ ...paragraph, marginBottom: 0 }}>
-                Através de modelos de deteção de objetos (YOLO) aplicados a imagens de satélite e ortofotomapas, são identificados os painéis fotovoltaicos existentes na freguesia. As deteções são filtradas em QGIS com polígonos de edifícios para reduzir falsos positivos, garantindo que apenas painéis reais em telhados são considerados.
+                Através de modelos de deteção de objetos (RF-DETR) aplicados a imagens de satélite e ortofotomapas, são identificados os painéis fotovoltaicos existentes na freguesia. As deteções são filtradas em QGIS com polígonos de edifícios para reduzir falsos positivos, garantindo que apenas painéis reais em telhados são considerados.
               </p>
             </div>
           </div>
@@ -1315,9 +1315,9 @@ function TabSobre() {
           <div style={iconBox}>
             <div style={{ ...iconCircle("#dceefb"), fontSize: 14, fontWeight: 700, color: "#2563a8" }}>3</div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Triangulação Geográfica</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Georreferenciação e Cálculo de Distâncias</div>
               <p style={{ ...paragraph, marginBottom: 0 }}>
-                A redistribuição usa triangulação por coordenadas GPS com raios configuráveis (tipicamente 2–4 km) para cruzar produtores e beneficiários. Apenas beneficiários dentro do raio de ação de um produtor e dentro do limite da freguesia — são elegíveis para receber energia desse produtor.
+                O cálculo de distâncias entre produtores e beneficiários é realizado pela fórmula de Haversine, com raios configuráveis (2–4 km). A validação geográfica utiliza o algoritmo Ray Casting para verificar se os registos estão dentro do polígono GeoJSON da freguesia. Apenas beneficiários dentro do raio e do limite da freguesia são elegíveis.
               </p>
             </div>
           </div>
@@ -1357,7 +1357,7 @@ function TabSobre() {
           <div style={{ ...highlight, textAlign: "center" }}>
             <div style={{ fontSize: 28, marginBottom: 8 }}>🤖</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: "#2d6a4f", marginBottom: 4 }}>Deteção Automática</div>
-            <div style={{ fontSize: 11, color: "#7a9e8e", lineHeight: 1.5 }}>Refinamento contínuo do modelo YOLO para deteção mais precisa com filtragem QGIS avançada.</div>
+            <div style={{ fontSize: 11, color: "#7a9e8e", lineHeight: 1.5 }}>Refinamento contínuo do modelo RF-DETR para deteção mais precisa com filtragem QGIS avançada.</div>
           </div>
           <div style={{ ...highlight, textAlign: "center" }}>
             <div style={{ fontSize: 28, marginBottom: 8 }}>🌍</div>
@@ -1374,13 +1374,13 @@ function TabSobre() {
           <div style={{ padding: "16px 20px", background: "#f8fdfb", borderRadius: 10, border: "1px solid #d8ede6" }}>
             <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Contexto Académico</div>
             <div style={{ fontSize: 13, color: "#3d5a4e", lineHeight: 1.6 }}>
-              Projeto Final da Licenciatura de Engenharia de Produção Industrial . deteção de painéis solares com YOLO/QGIS e redistribuição de excedente fotovoltaico via IPSS.
+              Projeto Final da Licenciatura de Engenharia de Produção Industrial . deteção de painéis solares com RF-DETR/QGIS e redistribuição de excedente fotovoltaico via IPSS.
             </div>
           </div>
           <div style={{ padding: "16px 20px", background: "#f8fdfb", borderRadius: 10, border: "1px solid #d8ede6" }}>
             <div style={{ fontSize: 11, color: "#7a9e8e", textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Tecnologias</div>
             <div style={{ fontSize: 13, color: "#3d5a4e", lineHeight: 1.6 }}>
-              React · Firebase Firestore · Leaflet · YOLO (deteção) · QGIS (SIG) · Haversine (distâncias) · Excel (I/O)
+              React · Firebase Firestore · Leaflet · RF-DETR (deteção) · QGIS (SIG) · Haversine (distâncias) · Excel (I/O)
             </div>
           </div>
         </div>
